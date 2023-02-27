@@ -17,12 +17,17 @@ import (
 )
 
 const (
+
+	// TODO: Dynamic screen widths/heights
+	//		 Fonts, DPI, font settings and images will also need to scale appropriately
 	screenWidth  = 640
 	screenHeight = 640
 	dpi = 72
 	baseFontSize = 24
 	gameTitle = "Go Snake"
 	startGameText = "Use arrow keys to guide Snake.\n    Press Enter to start."
+	bgImage = "images/tiles.png"
+	snakeHead = "images/snake-head.png"
 )
 
 var (
@@ -35,16 +40,21 @@ var (
 func init() {
 	// Load background image
 	var err error
-	tilesImage, _, err = ebitenutil.NewImageFromFile("images/tiles.png")
+	tilesImage, _, err = ebitenutil.NewImageFromFile(bgImage)
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Load snake head
-	snakeHead, _, err = ebitenutil.NewImageFromFile("images/snake-head.png")
+	snakeHead, _, err = ebitenutil.NewImageFromFile(snakeHead)
 	if err != nil {
 		log.Fatal(err)
 	}
+	//TODO: Add "snake body" that can be extended
+	//TODO: Add "snake tail" that will be the end
+
 	// Load basic font
+	// TODO: Investigate loading custom fonts or including our own
+	//		 font with our source
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
 		log.Fatal(err)
@@ -77,6 +87,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Draw start game text
 	if ( gameActive == false ) {
+
+		// TODO: Add some sort of way to detect the center of the screen
+		// TODO: Add some sort of BG overlay so font is more easily readable
 		text.Draw(screen, startGameText, baseFont, (screenWidth/3)-50, (screenHeight/3)+90, color.White)
 	}
 
@@ -84,6 +97,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	keyStrs := []string{}
 	for _, k := range g.keys {
 		keyStrs = append(keyStrs, k.String())
+
+		// TODO: Have a better way to detect game states
+		// TODO: Pull out game states into its own package/library
+		// 		 instead of just cramming it all in this one "Draw" function
 		if ( k.String() == "Enter" ){
 			gameActive = true
 		}
