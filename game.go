@@ -1,8 +1,6 @@
 package main
 
 import (
-	//"bytes"
-	//"image"
 	_ "image/png"
 	"log"
 	"strings"
@@ -13,13 +11,20 @@ import (
 )
 
 const (
-	screenWidth  = 320
-	screenHeight = 240
+	screenWidth  = 640
+	screenHeight = 640
 	gameTitle = "Go Snake"
 )
 
+var tilesImage *ebiten.Image
+
 func init() {
-	// Init stuff
+	// Load background image
+	var err error
+	tilesImage, _, err = ebitenutil.NewImageFromFile("images/tiles.png")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type Game struct {
@@ -32,9 +37,8 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	// Draw base images
-
-	// Draw new images
+	// Draw background
+	screen.DrawImage(tilesImage, nil)
 
 	// Get keys pressed
 	keyStrs := []string{}
@@ -55,8 +59,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	// Set window size
-	log.Println("Setting window size to", screenWidth*2, "x", screenHeight*2)
-	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
+	log.Println("Setting window size to", screenWidth, "x", screenHeight)
+	ebiten.SetWindowSize(screenWidth, screenHeight)
 
 	// Set window title
 	log.Println("Setting window title to", gameTitle)
