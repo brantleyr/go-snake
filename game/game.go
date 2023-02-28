@@ -1,9 +1,11 @@
 package game
 
 import (
+	"fmt"
 	"image/color"
 	_ "image/png"
 	"log"
+	"os"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -24,6 +26,7 @@ const (
 	ScreenHeight      = 640
 	dpi               = 72
 	baseFontSize      = 24
+	titleFontSize     = 48
 	GameTitle         = "Go Snake"
 	startGameText     = "Use arrow keys to guide Snake.\n    Press Enter to start."
 	bgImageSrc        = "images/tiles.png"
@@ -33,31 +36,35 @@ const (
 	rhImageSrc        = "images/red-hat.png"
 	ebImageSrc        = "images/ebitengine.png"
 	goImageSrc        = "images/golang.png"
-	baseSpeed		  = 1
-	cellSizeWidth	  = 76
-	cellSizeHeight	  = 76
-	gridLineSize	  = 3.75
+	snakeLogoImageSrc = "images/snake-logo.png"
+	baseSpeed         = 1
+	cellSizeWidth     = 76
+	cellSizeHeight    = 76
+	gridLineSize      = 3.75
 )
 
 type snake struct {
-	snakeHead 	*ebiten.Image
-	xPos		float64
-	yPos		float64
-	speed		float64
+	snakeHead *ebiten.Image
+	xPos      float64
+	yPos      float64
+	speed     float64
 }
 
 var (
-	tilesImage 		*ebiten.Image
-	snakeHead  		*ebiten.Image
-	snakePlayer		snake
-	drNick     		*ebiten.Image
-	schImage   		*ebiten.Image
-	rhImage    		*ebiten.Image
-	ebImage    		*ebiten.Image
-	goImage    		*ebiten.Image
-	baseFont   		font.Face
-	gameActive 		bool
-	GameState  		string // intro, title, game, exit
+	tilesImage  *ebiten.Image
+	snakeHead   *ebiten.Image
+	snakePlayer snake
+	drNick      *ebiten.Image
+	schImage    *ebiten.Image
+	rhImage     *ebiten.Image
+	ebImage     *ebiten.Image
+	goImage     *ebiten.Image
+	snakeLogo   *ebiten.Image
+	baseFont    font.Face
+	titleFont   font.Face
+	gameActive  bool
+	GameState   string // intro, title, game, exit
+	menuItem    string
 )
 
 func init() {
@@ -93,6 +100,11 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Load snake logo
+	snakeLogo, _, err = ebitenutil.NewImageFromFile(snakeLogoImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Make snake
 	snakePlayer = snake{snakeHead, gridLineSize, gridLineSize, baseSpeed}
@@ -115,10 +127,18 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	titleFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    titleFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	menuItem = "new_game"
 }
 
 type Game struct {
-	
 }
 
 func (g *Game) Update() error {
@@ -127,8 +147,34 @@ func (g *Game) Update() error {
 			log.Println("Enter key pressed in intro")
 			GameState = "title"
 		} else if GameState == "title" {
-			log.Println("Enter key pressed in title")
-			GameState = "game"
+			if menuItem == "new_game" {
+				GameState = "game"
+			} else if menuItem == "exit" {
+				// Loop to the down
+				GameState = "exit"
+			}
+		}
+	} else if GameState == "title" {
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+			log.Println("Arrow down key pressed in title")
+
+			if menuItem == "new_game" {
+				// They just moved down
+				menuItem = "exit"
+			} else if menuItem == "exit" {
+				// Loop to the top
+				menuItem = "new_game"
+			}
+		} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+			log.Println("Arrow up key pressed in title")
+
+			if menuItem == "new_game" {
+				// They just moved up
+				menuItem = "exit"
+			} else if menuItem == "exit" {
+				// Loop to the down
+				menuItem = "new_game"
+			}
 		}
 	}
 
@@ -160,6 +206,29 @@ func (g *Game) Update() error {
 	}
 
 	return nil
+}
+
+func (g *Game) newGame() {
+	GameState = "game"
+}
+
+func (g *Game) exitGame() {
+	GameState = "exit"
+}
+
+func ParseHexColor(s string) (c color.RGBA) {
+	c.A = 0xff
+	switch len(s) {
+	case 7:
+		fmt.Sscanf(s, "#%02x%02x%02x", &c.R, &c.G, &c.B)
+	case 4:
+		fmt.Sscanf(s, "#%1x%1x%1x", &c.R, &c.G, &c.B)
+		// Double the hex digits:
+		c.R *= 17
+		c.G *= 17
+		c.B *= 17
+	}
+	return
 }
 
 func doIntro(g *Game, screen *ebiten.Image) {
@@ -207,14 +276,31 @@ func doIntro(g *Game, screen *ebiten.Image) {
 
 }
 
-func doTitle(g *Game, screen *ebiten.Image) {
-	// TODO: Make menu system
+func drawTitle(screen *ebiten.Image) {
+	snake := &ebiten.DrawImageOptions{}
+	snake.GeoM.Scale(.25, .25)
+	snake.GeoM.Translate((ScreenWidth/2)-130, 20)
+	screen.DrawImage(snakeLogo, snake)
+	text.Draw(screen, "nake", titleFont, (ScreenWidth/2)-45, 135, color.White)
 
+	if menuItem == "new_game" {
+		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-10, (ScreenHeight/3)+140, ParseHexColor("#8c8c8c"))
+	} else if menuItem == "exit" {
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-10, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-56, (ScreenHeight/3)+140, color.White)
+	}
+}
+
+func doTitle(g *Game, screen *ebiten.Image) {
 	// TODO: Make some snake game logo to display above menu
 
 	// TODO: Add some sort of way to detect the center of the screen
 	// TODO: Add some sort of BG overlay so font is more easily readable
-	text.Draw(screen, startGameText, baseFont, (ScreenWidth/3)-50, (ScreenHeight/3)+90, color.White)
+
+	drawTitle(screen)
+	// Use this once we actually have a working menu
+	// text.Draw(screen, startGameText, baseFont, (ScreenWidth/3)-50, (ScreenHeight/3)+90, color.White)
 
 }
 
@@ -233,8 +319,8 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 }
 
-func doExit(g *Game, screen *ebiten.Image) {
-	// TODO: To trigger a game close / exit when chosen from the menu system
+func doExit(g *Game) {
+	g.exitGame()
 }
 
 func handleGameState(g *Game, screen *ebiten.Image) {
@@ -253,7 +339,8 @@ func handleGameState(g *Game, screen *ebiten.Image) {
 	}
 
 	if GameState == "exit" {
-		doExit(g, screen)
+		doExit(g)
+		os.Exit(0)
 	}
 
 }
