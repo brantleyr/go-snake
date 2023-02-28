@@ -4,7 +4,6 @@ import (
 	"image/color"
 	_ "image/png"
 	"log"
-	"strings"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -103,36 +102,21 @@ func init() {
 }
 
 type Game struct {
-	keys []ebiten.Key
+	
 }
 
 func (g *Game) Update() error {
-	g.keys = inpututil.AppendPressedKeys(g.keys[:0])
-	return nil
-}
-
-func handleKeys(g *Game, screen *ebiten.Image) []string {
-	keyStrs := []string{}
-	for _, k := range g.keys {
-		keyStrs = append(keyStrs, k.String())
-		if k.String() == "Enter" && GameState == "intro" {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		if GameState == "intro" {
+			log.Println("Enter key pressed in intro")
 			GameState = "title"
-		}
-		if k.String() == "Enter" && GameState == "title" {
-			gameActive = true
+		} else if GameState == "title" {
+			log.Println("Enter key pressed in title")
 			GameState = "game"
 		}
 	}
 
-	// Debug key presses
-	if DEBUG_MODE == true {
-		if len(keyStrs) > 0 {
-			log.Println("Pressing keys", strings.Join(keyStrs, ", "))
-		}
-		ebitenutil.DebugPrint(screen, strings.Join(keyStrs, ", "))
-	}
-
-	return keyStrs
+	return nil
 }
 
 func doIntro(g *Game, screen *ebiten.Image) {
@@ -178,9 +162,6 @@ func doIntro(g *Game, screen *ebiten.Image) {
 	goOp.GeoM.Translate(375, 300)
 	screen.DrawImage(goImage, goOp)
 
-	// Handle keys
-	handleKeys(g, screen)
-
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
@@ -192,9 +173,6 @@ func doTitle(g *Game, screen *ebiten.Image) {
 	// TODO: Add some sort of BG overlay so font is more easily readable
 	text.Draw(screen, startGameText, baseFont, (ScreenWidth/3)-50, (ScreenHeight/3)+90, color.White)
 
-	// Handle keys
-	handleKeys(g, screen)
-
 }
 
 func doGame(g *Game, screen *ebiten.Image) {
@@ -203,9 +181,6 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	// Draw snake head
 	screen.DrawImage(snakeHead, nil)
-
-	// Handle keys
-	handleKeys(g, screen)
 
 }
 
