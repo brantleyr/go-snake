@@ -33,19 +33,31 @@ const (
 	rhImageSrc        = "images/red-hat.png"
 	ebImageSrc        = "images/ebitengine.png"
 	goImageSrc        = "images/golang.png"
+	baseSpeed		  = 1
+	cellSizeWidth	  = 76
+	cellSizeHeight	  = 76
+	gridLineSize	  = 3.75
 )
 
+type snake struct {
+	snakeHead 	*ebiten.Image
+	xPos		float64
+	yPos		float64
+	speed		float64
+}
+
 var (
-	tilesImage *ebiten.Image
-	snakeHead  *ebiten.Image
-	drNick     *ebiten.Image
-	schImage   *ebiten.Image
-	rhImage    *ebiten.Image
-	ebImage    *ebiten.Image
-	goImage    *ebiten.Image
-	baseFont   font.Face
-	gameActive bool
-	GameState  string // intro, title, game, exit
+	tilesImage 		*ebiten.Image
+	snakeHead  		*ebiten.Image
+	snakePlayer		snake
+	drNick     		*ebiten.Image
+	schImage   		*ebiten.Image
+	rhImage    		*ebiten.Image
+	ebImage    		*ebiten.Image
+	goImage    		*ebiten.Image
+	baseFont   		font.Face
+	gameActive 		bool
+	GameState  		string // intro, title, game, exit
 )
 
 func init() {
@@ -81,6 +93,10 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Make snake
+	snakePlayer = snake{snakeHead, gridLineSize, gridLineSize, baseSpeed}
+
 	//TODO: Add "snake body" that can be extended
 	//TODO: Add "snake tail" that will be the end
 
@@ -113,6 +129,33 @@ func (g *Game) Update() error {
 		} else if GameState == "title" {
 			log.Println("Enter key pressed in title")
 			GameState = "game"
+		}
+	}
+
+	if GameState == "game" {
+		if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
+			newYpos := float64(cellSizeHeight) + float64(gridLineSize)
+			if (snakePlayer.yPos - newYpos) > 0 {
+				snakePlayer.yPos -= newYpos
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyDown) {
+			newYpos := float64(cellSizeHeight) + float64(gridLineSize)
+			if (snakePlayer.yPos + newYpos) < ScreenHeight {
+				snakePlayer.yPos += newYpos
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
+			newXpos := float64(cellSizeWidth) + float64(gridLineSize)
+			if (snakePlayer.xPos - newXpos) > 0 {
+				snakePlayer.xPos -= newXpos
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyRight) {
+			newXpos := float64(cellSizeWidth) + float64(gridLineSize)
+			if (snakePlayer.xPos + newXpos) < ScreenHeight {
+				snakePlayer.xPos += newXpos
+			}
 		}
 	}
 
@@ -180,7 +223,13 @@ func doGame(g *Game, screen *ebiten.Image) {
 	screen.DrawImage(tilesImage, nil)
 
 	// Draw snake head
-	screen.DrawImage(snakeHead, nil)
+	hOp := &ebiten.DrawImageOptions{}
+	hOp.GeoM.Translate(snakePlayer.xPos, snakePlayer.yPos)
+	screen.DrawImage(snakeHead, hOp)
+
+	// Draw middle parts
+
+	// Draw tail
 
 }
 
