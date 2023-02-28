@@ -29,19 +29,50 @@ const (
 	startGameText = "Use arrow keys to guide Snake.\n    Press Enter to start."
 	bgImageSrc = "images/tiles.png"
 	snakeHeadImageSrc = "images/snake-head.png"
+	drNickImageSrc = "images/dr-nick.png"
+	schImageSrc = "images/schneider.png"
+	rhImageSrc = "images/red-hat.png"
+	ebImageSrc = "images/ebitengine.png"
+	goImageSrc = "images/golang.png"
 )
 
 var (
 	tilesImage *ebiten.Image
 	snakeHead *ebiten.Image
+	drNick *ebiten.Image
+	schImage *ebiten.Image
+	rhImage *ebiten.Image
+	ebImage *ebiten.Image
+	goImage *ebiten.Image
 	baseFont font.Face
 	gameActive bool
 	gameState string // intro, title, game, exit
 )
 
 func init() {
-	// Load background image
 	var err error
+	// Load intro images
+	drNick, _, err = ebitenutil.NewImageFromFile(drNickImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	schImage, _, err = ebitenutil.NewImageFromFile(schImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rhImage, _, err = ebitenutil.NewImageFromFile(rhImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ebImage, _, err = ebitenutil.NewImageFromFile(ebImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	goImage, _, err = ebitenutil.NewImageFromFile(goImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Load background image
 	tilesImage, _, err = ebitenutil.NewImageFromFile(bgImageSrc)
 	if err != nil {
 		log.Fatal(err)
@@ -84,7 +115,10 @@ func handleKeys(g* Game, screen *ebiten.Image) []string {
 	keyStrs := []string{}
 	for _, k := range g.keys {
 		keyStrs = append(keyStrs, k.String())
-		if ( k.String() == "Enter" ){
+		if ( k.String() == "Enter" && gameState == "intro" ) {
+			gameState = "title"
+		}
+		if ( k.String() == "Enter" && gameState == "title" ) {
 			gameActive = true
 			gameState = "game"
 		}
@@ -103,12 +137,49 @@ func handleKeys(g* Game, screen *ebiten.Image) []string {
 
 func doIntro(g* Game, screen *ebiten.Image) {
 
+	// TODO: Clean up these images and spacing
+	//	     Try to find a way to dynamically place them instead of hard-coding
+
 	// Show some opening credit images
 	// Red Hat
 	// Dr. Nick
 	// Schneiders picture of choice
 	// Golang picture
 	// Etc
+
+	// Show images
+	// Dr. Nick
+	nickOp := &ebiten.DrawImageOptions{}
+	nickOp.GeoM.Scale(.25, .25)
+	nickOp.GeoM.Translate(75, 125)
+	screen.DrawImage(drNick, nickOp)
+
+	// Schneider
+	schOp := &ebiten.DrawImageOptions{}
+	schOp.GeoM.Scale(.40, .40)
+	schOp.GeoM.Translate(250, 125)
+	screen.DrawImage(schImage, schOp)
+
+	// Red Hat
+	rhOp := &ebiten.DrawImageOptions{}
+	rhOp.GeoM.Scale(.65, .65)
+	rhOp.GeoM.Translate(425, 125)
+	screen.DrawImage(rhImage, rhOp)
+
+	// Ebitengine
+	ebOp := &ebiten.DrawImageOptions{}
+	ebOp.GeoM.Scale(.65, .65)
+	ebOp.GeoM.Translate(125, 300)
+	screen.DrawImage(ebImage, ebOp)
+
+	// Golang
+	goOp := &ebiten.DrawImageOptions{}
+	goOp.GeoM.Scale(.25, .25)
+	goOp.GeoM.Translate(375, 300)
+	screen.DrawImage(goImage, goOp)
+
+	// Handle keys
+	handleKeys(g, screen)
 
 }
 
@@ -181,7 +252,7 @@ func main() {
 	ebiten.SetWindowTitle(gameTitle)
 
 	// Set game state
-	gameState = "title"
+	gameState = "intro"
 
 	// Run the game
 	if err := ebiten.RunGame(&Game{}); err != nil {
