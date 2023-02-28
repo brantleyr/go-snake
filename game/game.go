@@ -1,8 +1,8 @@
-package main
+package game
 
 import (
-	_ "image/png"
 	"image/color"
+	_ "image/png"
 	"log"
 	"strings"
 
@@ -11,8 +11,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 )
 
@@ -20,33 +20,33 @@ const (
 
 	// TODO: Dynamic screen widths/heights
 	//		 Fonts, DPI, font settings and images will also need to scale appropriately
-	DEBUG_MODE = true
-	screenWidth  = 640
-	screenHeight = 640
-	dpi = 72
-	baseFontSize = 24
-	gameTitle = "Go Snake"
-	startGameText = "Use arrow keys to guide Snake.\n    Press Enter to start."
-	bgImageSrc = "images/tiles.png"
+	DEBUG_MODE        = true
+	ScreenWidth       = 640
+	ScreenHeight      = 640
+	dpi               = 72
+	baseFontSize      = 24
+	GameTitle         = "Go Snake"
+	startGameText     = "Use arrow keys to guide Snake.\n    Press Enter to start."
+	bgImageSrc        = "images/tiles.png"
 	snakeHeadImageSrc = "images/snake-head.png"
-	drNickImageSrc = "images/dr-nick.png"
-	schImageSrc = "images/schneider.png"
-	rhImageSrc = "images/red-hat.png"
-	ebImageSrc = "images/ebitengine.png"
-	goImageSrc = "images/golang.png"
+	drNickImageSrc    = "images/dr-nick.png"
+	schImageSrc       = "images/schneider.png"
+	rhImageSrc        = "images/red-hat.png"
+	ebImageSrc        = "images/ebitengine.png"
+	goImageSrc        = "images/golang.png"
 )
 
 var (
 	tilesImage *ebiten.Image
-	snakeHead *ebiten.Image
-	drNick *ebiten.Image
-	schImage *ebiten.Image
-	rhImage *ebiten.Image
-	ebImage *ebiten.Image
-	goImage *ebiten.Image
-	baseFont font.Face
+	snakeHead  *ebiten.Image
+	drNick     *ebiten.Image
+	schImage   *ebiten.Image
+	rhImage    *ebiten.Image
+	ebImage    *ebiten.Image
+	goImage    *ebiten.Image
+	baseFont   font.Face
 	gameActive bool
-	gameState string // intro, title, game, exit
+	GameState  string // intro, title, game, exit
 )
 
 func init() {
@@ -111,21 +111,21 @@ func (g *Game) Update() error {
 	return nil
 }
 
-func handleKeys(g* Game, screen *ebiten.Image) []string {
+func handleKeys(g *Game, screen *ebiten.Image) []string {
 	keyStrs := []string{}
 	for _, k := range g.keys {
 		keyStrs = append(keyStrs, k.String())
-		if ( k.String() == "Enter" && gameState == "intro" ) {
-			gameState = "title"
+		if k.String() == "Enter" && GameState == "intro" {
+			GameState = "title"
 		}
-		if ( k.String() == "Enter" && gameState == "title" ) {
+		if k.String() == "Enter" && GameState == "title" {
 			gameActive = true
-			gameState = "game"
+			GameState = "game"
 		}
 	}
 
 	// Debug key presses
-	if ( DEBUG_MODE == true ) {
+	if DEBUG_MODE == true {
 		if len(keyStrs) > 0 {
 			log.Println("Pressing keys", strings.Join(keyStrs, ", "))
 		}
@@ -135,7 +135,7 @@ func handleKeys(g* Game, screen *ebiten.Image) []string {
 	return keyStrs
 }
 
-func doIntro(g* Game, screen *ebiten.Image) {
+func doIntro(g *Game, screen *ebiten.Image) {
 
 	// TODO: Clean up these images and spacing
 	//	     Try to find a way to dynamically place them instead of hard-coding
@@ -183,21 +183,21 @@ func doIntro(g* Game, screen *ebiten.Image) {
 
 }
 
-func doTitle(g* Game, screen *ebiten.Image) {
+func doTitle(g *Game, screen *ebiten.Image) {
 	// TODO: Make menu system
 
 	// TODO: Make some snake game logo to display above menu
 
 	// TODO: Add some sort of way to detect the center of the screen
 	// TODO: Add some sort of BG overlay so font is more easily readable
-	text.Draw(screen, startGameText, baseFont, (screenWidth/3)-50, (screenHeight/3)+90, color.White)
+	text.Draw(screen, startGameText, baseFont, (ScreenWidth/3)-50, (ScreenHeight/3)+90, color.White)
 
 	// Handle keys
 	handleKeys(g, screen)
-	
+
 }
 
-func doGame(g* Game, screen *ebiten.Image) {
+func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	screen.DrawImage(tilesImage, nil)
 
@@ -209,53 +209,35 @@ func doGame(g* Game, screen *ebiten.Image) {
 
 }
 
-func doExit(g* Game, screen *ebiten.Image) {
+func doExit(g *Game, screen *ebiten.Image) {
 	// TODO: To trigger a game close / exit when chosen from the menu system
 }
 
-func handleGameState(g* Game, screen *ebiten.Image) {
+func handleGameState(g *Game, screen *ebiten.Image) {
 
 	// TODO: Maybe make this cleaner
-	if ( gameState == "intro" ) {
+	if GameState == "intro" {
 		doIntro(g, screen)
 	}
 
-	if ( gameState == "title" ) {
+	if GameState == "title" {
 		doTitle(g, screen)
 	}
 
-	if ( gameState == "game" ){
+	if GameState == "game" {
 		doGame(g, screen)
 	}
 
-	if ( gameState == "exit" ){
+	if GameState == "exit" {
 		doExit(g, screen)
 	}
 
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
+	return ScreenWidth, ScreenHeight
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	handleGameState(g, screen)
-}
-
-func main() {
-	// Set window size
-	log.Println("Setting window size to", screenWidth, "x", screenHeight)
-	ebiten.SetWindowSize(screenWidth, screenHeight)
-
-	// Set window title
-	log.Println("Setting window title to", gameTitle)
-	ebiten.SetWindowTitle(gameTitle)
-
-	// Set game state
-	gameState = "intro"
-
-	// Run the game
-	if err := ebiten.RunGame(&Game{}); err != nil {
-		log.Fatal(err)
-	}
 }
