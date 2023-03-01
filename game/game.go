@@ -22,8 +22,6 @@ const (
 	// TODO: Dynamic screen widths/heights
 	//		 Fonts, DPI, font settings and images will also need to scale appropriately
 	DEBUG_MODE             = true
-	ScreenWidth            = 640
-	ScreenHeight           = 640
 	dpi                    = 72
 	baseFontSize           = 24
 	titleFontSize          = 48
@@ -83,6 +81,8 @@ var (
 	GamePaused     bool
 	GameState      string // intro, title, game, exit
 	menuItem       string
+	ScreenWidth    = 640
+	ScreenHeight   = 640
 )
 
 func init() {
@@ -303,9 +303,10 @@ func doIntro(g *Game, screen *ebiten.Image) {
 }
 
 func drawTitle(screen *ebiten.Image) {
+	// Logo on top
 	snake := &ebiten.DrawImageOptions{}
 	snake.GeoM.Scale(.25, .25)
-	snake.GeoM.Translate((ScreenWidth/2)-130, 20)
+	snake.GeoM.Translate(float64((ScreenWidth/2))-130, 20)
 	screen.DrawImage(snakeLogo, snake)
 	text.Draw(screen, "nake", titleFont, (ScreenWidth/2)-45, 135, color.White)
 
@@ -401,6 +402,9 @@ func handleGameState(g *Game, screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	ScreenWidth = outsideWidth
+	ScreenHeight = outsideHeight
+
 	return ScreenWidth, ScreenHeight
 }
 
