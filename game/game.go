@@ -42,8 +42,8 @@ const (
 	cellSizeWidth          = 76
 	cellSizeHeight         = 76
 	gridLineSize           = 3.75
-	gridHeight			   = 20
-	gridWidth			   = 20
+	gridHeight             = 20
+	gridWidth              = 20
 )
 
 type snakeBody struct {
@@ -349,7 +349,7 @@ func buildGrid(screen *ebiten.Image) {
 	gridCellHeight = ScreenHeight / gridHeight
 	for ix := 0; ix < gridCellWidth; ix++ {
 		for iy := 0; iy < gridCellHeight; iy++ {
-			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix,iy))
+			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
 		}
 	}
 
