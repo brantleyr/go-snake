@@ -14,6 +14,8 @@ func main() {
 	// Set window title
 	ebiten.SetWindowTitle(game.GameTitle)
 
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
 	// Set game state
 	game.GameState = "intro"
 	game.GameStarted = false
