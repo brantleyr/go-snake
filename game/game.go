@@ -41,7 +41,7 @@ const (
 	ebImageSrc             = "images/ebitengine.png"
 	goImageSrc             = "images/golang.png"
 	snakeLogoImageSrc      = "images/snake-logo.png"
-	baseSpeed              = 3
+	baseSpeed              = 1.25
 	cellSizeWidth          = 76
 	cellSizeHeight         = 76
 	gridLineSize           = 3.75
