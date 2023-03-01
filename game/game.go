@@ -249,14 +249,6 @@ func (g *Game) Update() error {
 	return nil
 }
 
-func (g *Game) newGame() {
-	GameState = "game"
-}
-
-func (g *Game) exitGame() {
-	GameState = "exit"
-}
-
 func ParseHexColor(s string) (c color.RGBA) {
 	c.A = 0xff
 	switch len(s) {
@@ -384,7 +376,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 }
 
 func doExit(g *Game) {
-	g.exitGame()
+	GameState = "exit"
 }
 
 func handleGameState(g *Game, screen *ebiten.Image) {
@@ -403,7 +395,6 @@ func handleGameState(g *Game, screen *ebiten.Image) {
 	}
 
 	if GameState == "exit" {
-		doExit(g)
 		os.Exit(0)
 	}
 
