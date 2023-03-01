@@ -331,6 +331,10 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	screen.DrawImage(tilesImage, nil)
 
+	if GameStarted == true {
+		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
+	}
+
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == false {
 		// Update snake
