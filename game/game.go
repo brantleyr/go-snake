@@ -27,7 +27,6 @@ const (
 	titleFontSize          = 48
 	GameTitle              = "Go Snake"
 	startGameText          = "Use arrow keys to guide Snake.\n    Press Enter to start."
-	bgImageSrc             = "images/tiles.png"
 	snakeHeadUpImageSrc    = "images/snake-head-up.png"
 	snakeHeadDownImageSrc  = "images/snake-head-down.png"
 	snakeHeadLeftImageSrc  = "images/snake-head-left.png"
@@ -43,6 +42,8 @@ const (
 	cellSizeWidth          = 76
 	cellSizeHeight         = 76
 	gridLineSize           = 3.75
+	gridHeight             = 20
+	gridWidth              = 20
 )
 
 type snakeBody struct {
@@ -62,7 +63,6 @@ type snake struct {
 }
 
 var (
-	tilesImage     *ebiten.Image
 	snakeHeadUp    *ebiten.Image
 	snakeHeadDown  *ebiten.Image
 	snakeHeadLeft  *ebiten.Image
@@ -83,6 +83,8 @@ var (
 	menuItem       string
 	ScreenWidth    = 640
 	ScreenHeight   = 640
+	gridCellHeight int
+	gridCellWidth  int
 )
 
 func init() {
@@ -105,11 +107,6 @@ func init() {
 		log.Fatal(err)
 	}
 	goImage, _, err = ebitenutil.NewImageFromFile(goImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Load background image
-	tilesImage, _, err = ebitenutil.NewImageFromFile(bgImageSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -328,9 +325,39 @@ func doTitle(g *Game, screen *ebiten.Image) {
 
 }
 
+func getGridColor(ix int, iy int) color.Color {
+	var theColor color.Color
+	if ix%2 == 0 {
+		if iy%2 == 0 {
+			theColor = ParseHexColor("#002200")
+		} else {
+			theColor = color.Black
+		}
+	} else {
+		if iy%2 == 0 {
+			theColor = color.Black
+		} else {
+			theColor = ParseHexColor("#002200")
+		}
+	}
+	return theColor
+}
+
+func buildGrid(screen *ebiten.Image) {
+
+	gridCellWidth = ScreenWidth / gridWidth
+	gridCellHeight = ScreenHeight / gridHeight
+	for ix := 0; ix < gridCellWidth; ix++ {
+		for iy := 0; iy < gridCellHeight; iy++ {
+			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
+		}
+	}
+
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
-	screen.DrawImage(tilesImage, nil)
+	buildGrid(screen)
 
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == false {
