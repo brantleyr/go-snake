@@ -23,8 +23,8 @@ const (
 	//		 Fonts, DPI, font settings and images will also need to scale appropriately
 	DEBUG_MODE             = true
 	dpi                    = 72
-	baseFontSize           = 24
-	titleFontSize          = 48
+	baseFontSize           = 36
+	titleFontSize          = 72
 	GameTitle              = "Go Snake"
 	startGameText          = "Use arrow keys to guide Snake.\n    Press Enter to start."
 	snakeHeadUpImageSrc    = "images/snake-head-up.png"
@@ -81,8 +81,8 @@ var (
 	GamePaused     bool
 	GameState      string // intro, title, game, exit
 	menuItem       string
-	ScreenWidth    = 640
-	ScreenHeight   = 640
+	ScreenWidth    = 1200
+	ScreenHeight   = 1024
 	gridCellHeight int
 	gridCellWidth  int
 )
@@ -269,50 +269,49 @@ func doIntro(g *Game, screen *ebiten.Image) {
 	// Show images
 	// Dr. Nick
 	nickOp := &ebiten.DrawImageOptions{}
-	nickOp.GeoM.Scale(.25, .25)
-	nickOp.GeoM.Translate(75, 125)
+	nickOp.GeoM.Scale(.5, .5)
+	nickOp.GeoM.Translate(float64(ScreenWidth)*0.1171875, float64(ScreenHeight)*0.1953125)
 	screen.DrawImage(drNick, nickOp)
 
 	// Schneider
 	schOp := &ebiten.DrawImageOptions{}
-	schOp.GeoM.Scale(.40, .40)
-	schOp.GeoM.Translate(250, 125)
+	schOp.GeoM.Scale(.80, .80)
+	schOp.GeoM.Translate(float64(ScreenWidth)*0.390625, float64(ScreenHeight)*0.1953125)
 	screen.DrawImage(schImage, schOp)
 
 	// Red Hat
 	rhOp := &ebiten.DrawImageOptions{}
-	rhOp.GeoM.Scale(.65, .65)
-	rhOp.GeoM.Translate(425, 125)
+	rhOp.GeoM.Scale(1.3, 1.3)
+	rhOp.GeoM.Translate(float64(ScreenWidth)*0.6640625, float64(ScreenHeight)*0.1953125)
 	screen.DrawImage(rhImage, rhOp)
 
 	// Ebitengine
 	ebOp := &ebiten.DrawImageOptions{}
-	ebOp.GeoM.Scale(.65, .65)
-	ebOp.GeoM.Translate(125, 300)
+	ebOp.GeoM.Scale(1.3, 1.3)
+	ebOp.GeoM.Translate(float64(ScreenWidth)*0.1953125, float64(ScreenHeight)*0.46875)
 	screen.DrawImage(ebImage, ebOp)
 
 	// Golang
 	goOp := &ebiten.DrawImageOptions{}
-	goOp.GeoM.Scale(.25, .25)
-	goOp.GeoM.Translate(375, 300)
+	goOp.GeoM.Scale(.50, .50)
+	goOp.GeoM.Translate(float64(ScreenWidth)*0.5859375, float64(ScreenHeight)*0.46875)
 	screen.DrawImage(goImage, goOp)
 
 }
 
 func drawTitle(screen *ebiten.Image) {
-	// Logo on top
+	// Logo and text on top
 	snake := &ebiten.DrawImageOptions{}
-	snake.GeoM.Scale(.25, .25)
-	snake.GeoM.Translate(float64((ScreenWidth/2))-130, 20)
+	snake.GeoM.Scale(.50, .50)
+	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.203125), float64(ScreenHeight)*0.08125)
 	screen.DrawImage(snakeLogo, snake)
-	text.Draw(screen, "nake", titleFont, (ScreenWidth/2)-45, 135, color.White)
 
 	if menuItem == "new_game" {
-		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
-		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-10, (ScreenHeight/3)+140, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+90, color.White)
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+170, ParseHexColor("#8c8c8c"))
 	} else if menuItem == "exit" {
-		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-10, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
-		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-56, (ScreenHeight/3)+140, color.White)
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+170, color.White)
 	}
 }
 
@@ -320,6 +319,8 @@ func doTitle(g *Game, screen *ebiten.Image) {
 
 	// TODO: Add some sort of way to detect the center of the screen
 	// TODO: Add some sort of BG overlay so font is more easily readable
+
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
 
 	drawTitle(screen)
 
@@ -358,10 +359,6 @@ func buildGrid(screen *ebiten.Image) {
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
-
-	if GameStarted == true {
-		ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
-	}
 
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == false {
