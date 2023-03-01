@@ -62,7 +62,8 @@ var (
 	snakeLogo   *ebiten.Image
 	baseFont    font.Face
 	titleFont   font.Face
-	gameActive  bool
+	GameStarted bool
+	GamePaused 	bool
 	GameState   string // intro, title, game, exit
 	menuItem    string
 )
@@ -139,14 +140,19 @@ func init() {
 }
 
 type Game struct {
+
 }
 
 func (g *Game) Update() error {
-	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		if GameState == "intro" {
-			log.Println("Enter key pressed in intro")
+	// Handle "intro" game state key events
+	if GameState == "intro" {
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter){
 			GameState = "title"
-		} else if GameState == "title" {
+		}
+
+	// Handle "title" game state key events
+	} else if GameState == "title" {
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter){
 			if menuItem == "new_game" {
 				GameState = "game"
 			} else if menuItem == "exit" {
@@ -154,10 +160,7 @@ func (g *Game) Update() error {
 				GameState = "exit"
 			}
 		}
-	} else if GameState == "title" {
 		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
-			log.Println("Arrow down key pressed in title")
-
 			if menuItem == "new_game" {
 				// They just moved down
 				menuItem = "exit"
@@ -166,8 +169,6 @@ func (g *Game) Update() error {
 				menuItem = "new_game"
 			}
 		} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
-			log.Println("Arrow up key pressed in title")
-
 			if menuItem == "new_game" {
 				// They just moved up
 				menuItem = "exit"
@@ -176,31 +177,46 @@ func (g *Game) Update() error {
 				menuItem = "new_game"
 			}
 		}
-	}
 
-	if GameState == "game" {
-		if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
-			newYpos := float64(cellSizeHeight) + float64(gridLineSize)
-			if (snakePlayer.yPos - newYpos) > 0 {
-				snakePlayer.yPos -= newYpos
+	// Handle "game" game state key events
+	} else if GameState == "game" {
+		if GameStarted == true {
+			if GamePaused == false {
+				if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
+					newYpos := float64(cellSizeHeight) + float64(gridLineSize)
+					if (snakePlayer.yPos - newYpos) > 0 {
+						snakePlayer.yPos -= newYpos
+					}
+				}
+				if inpututil.IsKeyJustPressed(ebiten.KeyDown) {
+					newYpos := float64(cellSizeHeight) + float64(gridLineSize)
+					if (snakePlayer.yPos + newYpos) < ScreenHeight {
+						snakePlayer.yPos += newYpos
+					}
+				}
+				if inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
+					newXpos := float64(cellSizeWidth) + float64(gridLineSize)
+					if (snakePlayer.xPos - newXpos) > 0 {
+						snakePlayer.xPos -= newXpos
+					}
+				}
+				if inpututil.IsKeyJustPressed(ebiten.KeyRight) {
+					newXpos := float64(cellSizeWidth) + float64(gridLineSize)
+					if (snakePlayer.xPos + newXpos) < ScreenHeight {
+						snakePlayer.xPos += newXpos
+					}
+				}
+				if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+					GamePaused = true
+				}
+			} else {
+				if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+					GamePaused = false
+				}
 			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyDown) {
-			newYpos := float64(cellSizeHeight) + float64(gridLineSize)
-			if (snakePlayer.yPos + newYpos) < ScreenHeight {
-				snakePlayer.yPos += newYpos
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
-			newXpos := float64(cellSizeWidth) + float64(gridLineSize)
-			if (snakePlayer.xPos - newXpos) > 0 {
-				snakePlayer.xPos -= newXpos
-			}
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyRight) {
-			newXpos := float64(cellSizeWidth) + float64(gridLineSize)
-			if (snakePlayer.xPos + newXpos) < ScreenHeight {
-				snakePlayer.xPos += newXpos
+		} else {
+			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+				GameStarted = true
 			}
 		}
 	}
@@ -316,6 +332,19 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Draw middle parts
 
 	// Draw tail
+
+	// Handle game started vs paused
+	if GameStarted == true {
+		if GamePaused == true {	
+			text.Draw(screen, "Game Paused. Escape to resume.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+		} else { 
+			// Update snake
+		}
+	} else {
+		// Do not update snake
+		// Show start text
+		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+	}
 
 }
 

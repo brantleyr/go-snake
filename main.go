@@ -9,15 +9,15 @@ import (
 
 func main() {
 	// Set window size
-	log.Println("Setting window size to", game.ScreenWidth, "x", game.ScreenHeight)
 	ebiten.SetWindowSize(game.ScreenWidth, game.ScreenHeight)
 
 	// Set window title
-	log.Println("Setting window title to", game.GameTitle)
 	ebiten.SetWindowTitle(game.GameTitle)
 
 	// Set game state
 	game.GameState = "intro"
+	game.GameStarted = false
+	game.GamePaused = false
 
 	// Run the game
 	if err := ebiten.RunGame(&game.Game{}); err != nil {
