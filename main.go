@@ -15,8 +15,8 @@ func main() {
 	ebiten.SetWindowTitle(game.GameTitle)
 
 	// Set game state
-	game.GameState = "intro"
-	game.GameStarted = false
+	game.GameState = "game"
+	game.GameStarted = true
 	game.GamePaused = false
 
 	// Run the game
