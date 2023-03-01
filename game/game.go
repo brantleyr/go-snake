@@ -21,53 +21,43 @@ const (
 
 	// TODO: Dynamic screen widths/heights
 	//		 Fonts, DPI, font settings and images will also need to scale appropriately
-	DEBUG_MODE             = true
-	dpi                    = 72
-	baseFontSize           = 36
-	titleFontSize          = 72
-	GameTitle              = "Go Snake"
-	startGameText          = "Use arrow keys to guide Snake.\n    Press Enter to start."
-	snakeHeadUpImageSrc    = "images/snake-head-up.png"
-	snakeHeadDownImageSrc  = "images/snake-head-down.png"
-	snakeHeadLeftImageSrc  = "images/snake-head-left.png"
-	snakeHeadRightImageSrc = "images/snake-head-right.png"
-	snakeBodyImageSrc      = "images/snake-body.png"
-	drNickImageSrc         = "images/dr-nick.png"
-	schImageSrc            = "images/schneider.png"
-	rhImageSrc             = "images/red-hat.png"
-	ebImageSrc             = "images/ebitengine.png"
-	goImageSrc             = "images/golang.png"
-	snakeLogoImageSrc      = "images/snake-logo.png"
-	baseSpeed              = 1.25
-	cellSizeWidth          = 76
-	cellSizeHeight         = 76
-	gridLineSize           = 3.75
-	gridHeight             = 20
-	gridWidth              = 20
+	DEBUG_MODE        = true
+	dpi               = 72
+	baseFontSize      = 36
+	titleFontSize     = 72
+	GameTitle         = "Go Snake"
+	startGameText     = "Use arrow keys to guide Snake.\n    Press Enter to start."
+	drNickImageSrc    = "images/dr-nick.png"
+	schImageSrc       = "images/schneider.png"
+	rhImageSrc        = "images/red-hat.png"
+	ebImageSrc        = "images/ebitengine.png"
+	goImageSrc        = "images/golang.png"
+	snakeLogoImageSrc = "images/snake-logo.png"
+	gridHeight        = 20
+	gridWidth         = 20
+	gridSolidColor    = "#002200"
+	pieceColor        = "#00ff00"
+	clockSpeed        = 30
 )
 
+type pathPair struct {
+	xPos, yPos int
+}
+
 type snakeBody struct {
-	body    *ebiten.Image
-	xPos    float64
-	yPos    float64
+	xPos    int
+	yPos    int
 	segment int
 }
 
 type snake struct {
-	snakeHead *ebiten.Image
 	snakeBody []snakeBody
-	xPos      float64
-	yPos      float64
-	speed     float64
+	xPos      int
+	yPos      int
 	direction string // up, down, left, right
 }
 
 var (
-	snakeHeadUp    *ebiten.Image
-	snakeHeadDown  *ebiten.Image
-	snakeHeadLeft  *ebiten.Image
-	snakeHeadRight *ebiten.Image
-	snakeBodyPart  *ebiten.Image
 	snakePlayer    snake
 	drNick         *ebiten.Image
 	schImage       *ebiten.Image
@@ -85,6 +75,7 @@ var (
 	ScreenHeight   = 1024
 	gridCellHeight int
 	gridCellWidth  int
+	snakePath      []pathPair
 )
 
 func init() {
@@ -110,27 +101,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Load snake images
-	snakeHeadUp, _, err = ebitenutil.NewImageFromFile(snakeHeadUpImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	snakeHeadDown, _, err = ebitenutil.NewImageFromFile(snakeHeadDownImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	snakeHeadLeft, _, err = ebitenutil.NewImageFromFile(snakeHeadLeftImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	snakeHeadRight, _, err = ebitenutil.NewImageFromFile(snakeHeadRightImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	snakeBodyPart, _, err = ebitenutil.NewImageFromFile(snakeBodyImageSrc)
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Load snake logo
 	snakeLogo, _, err = ebitenutil.NewImageFromFile(snakeLogoImageSrc)
 	if err != nil {
@@ -140,10 +110,11 @@ func init() {
 	// Make snake
 	var initialBodyPieces []snakeBody
 	initialBodyPieces = []snakeBody{
-		snakeBody{snakeBodyPart, gridLineSize, gridLineSize, 1},
-		snakeBody{snakeBodyPart, gridLineSize, ((gridLineSize * 2) + cellSizeHeight), 0},
+		snakeBody{0, 0, 2},
+		snakeBody{0, 1, 1},
+		snakeBody{0, 2, 0},
 	}
-	snakePlayer = snake{snakeHeadDown, initialBodyPieces, gridLineSize, ((gridLineSize * 3) + (cellSizeHeight * 2)), baseSpeed, "down"}
+	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
 
 	// Load basic font
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
@@ -170,7 +141,7 @@ func init() {
 }
 
 type Game struct {
-	count int
+	clockSpeedCount int
 }
 
 func (g *Game) Update() error {
@@ -330,7 +301,7 @@ func getGridColor(ix int, iy int) color.Color {
 	var theColor color.Color
 	if ix%2 == 0 {
 		if iy%2 == 0 {
-			theColor = ParseHexColor("#002200")
+			theColor = ParseHexColor(gridSolidColor)
 		} else {
 			theColor = color.Black
 		}
@@ -338,7 +309,7 @@ func getGridColor(ix int, iy int) color.Color {
 		if iy%2 == 0 {
 			theColor = color.Black
 		} else {
-			theColor = ParseHexColor("#002200")
+			theColor = ParseHexColor(gridSolidColor)
 		}
 	}
 	return theColor
@@ -356,41 +327,50 @@ func buildGrid(screen *ebiten.Image) {
 
 }
 
+func drawPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
+
+	if shapeType == "rect" {
+		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), theColor)
+	}
+	if shapeType == "smallcircle" {
+		radius := float64((float64(gridCellWidth/5) + float64(gridCellHeight/5)) / 2)
+		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*2.5), float64(iy*gridCellHeight)+(radius*2.5), radius, theColor)
+	}
+	if shapeType == "circle" {
+		radius := float64((float64(gridCellWidth/3) + float64(gridCellHeight/3)) / 2)
+		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*1.5), float64(iy*gridCellHeight)+(radius*1.5), radius, theColor)
+	}
+	if shapeType == "triangle" {
+		//TODO: For tail, for now its a smaller cicle
+	}
+
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
 
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == false {
+		var moveCounter int
+		if g.clockSpeedCount == 0 {
+			moveCounter = 1
+		} else {
+			moveCounter = 0
+		}
 		// Update snake
 		if snakePlayer.direction == "up" {
-			snakePlayer.snakeHead = snakeHeadUp
-			snakePlayer.yPos -= snakePlayer.speed
+			snakePlayer.yPos -= moveCounter
 		}
 		if snakePlayer.direction == "down" {
-			snakePlayer.snakeHead = snakeHeadDown
-			snakePlayer.yPos += snakePlayer.speed
+			snakePlayer.yPos += moveCounter
 		}
 		if snakePlayer.direction == "left" {
-			snakePlayer.snakeHead = snakeHeadLeft
-			snakePlayer.xPos -= snakePlayer.speed
+			snakePlayer.xPos -= moveCounter
 		}
 		if snakePlayer.direction == "right" {
-			snakePlayer.snakeHead = snakeHeadRight
-			snakePlayer.xPos += snakePlayer.speed
+			snakePlayer.xPos += moveCounter
 		}
-	}
-
-	// Draw snake head
-	hOp := &ebiten.DrawImageOptions{}
-	hOp.GeoM.Translate(snakePlayer.xPos, snakePlayer.yPos)
-	screen.DrawImage(snakePlayer.snakeHead, hOp)
-
-	// Draw parts
-	for _, snakeBodyPart := range snakePlayer.snakeBody {
-		sbOp := &ebiten.DrawImageOptions{}
-		sbOp.GeoM.Translate(snakeBodyPart.xPos, snakeBodyPart.yPos)
-		screen.DrawImage(snakeBodyPart.body, sbOp)
 	}
 
 	// Handle game started vs paused
@@ -400,6 +380,33 @@ func doGame(g *Game, screen *ebiten.Image) {
 		// Do not update snake
 		// Show start text
 		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)+20, (ScreenHeight/3)+180, color.White)
+	}
+
+	// Draw head
+	drawPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "rect")
+
+	// Draw pieces
+	// TODO: Add "idx" here so that you can update the xPos and yPos of the snake piece segement
+	//		 Then use that xPos and yPos in the "drawPiece" function
+	for _, snakePiece := range snakePlayer.snakeBody {
+		// Tail
+		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
+			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
+			// Other pieces
+		} else {
+			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "circle")
+		}
+	}
+
+	// Update path
+	// TODO: Why isnt this properly extending the list?
+	// snakePath := append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath...)
+
+	// Update clock speed count
+	// TODO: Is there some way to control game fps or clock speed or ticks in ebitengine?
+	g.clockSpeedCount += 1
+	if g.clockSpeedCount > clockSpeed {
+		g.clockSpeedCount = 0
 	}
 
 }
