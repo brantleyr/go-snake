@@ -328,7 +328,6 @@ func buildGrid(screen *ebiten.Image) {
 }
 
 func drawPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
-
 	if shapeType == "rect" {
 		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), theColor)
 	}
@@ -358,18 +357,27 @@ func doGame(g *Game, screen *ebiten.Image) {
 		} else {
 			moveCounter = 0
 		}
+
 		// Update snake
-		if snakePlayer.direction == "up" {
-			snakePlayer.yPos -= moveCounter
+		if snakePlayer.yPos > 0 {
+			if snakePlayer.direction == "up" {
+				snakePlayer.yPos -= moveCounter
+			}
 		}
-		if snakePlayer.direction == "down" {
-			snakePlayer.yPos += moveCounter
+		if snakePlayer.yPos < 19 {
+			if snakePlayer.direction == "down" {
+				snakePlayer.yPos += moveCounter
+			}
 		}
-		if snakePlayer.direction == "left" {
-			snakePlayer.xPos -= moveCounter
+		if snakePlayer.xPos > 0 {
+			if snakePlayer.direction == "left" {
+				snakePlayer.xPos -= moveCounter
+			}
 		}
-		if snakePlayer.direction == "right" {
-			snakePlayer.xPos += moveCounter
+		if snakePlayer.xPos < 19 {
+			if snakePlayer.direction == "right" {
+				snakePlayer.xPos += moveCounter
+			}
 		}
 	}
 
@@ -389,24 +397,27 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// TODO: Add "idx" here so that you can update the xPos and yPos of the snake piece segement
 	//		 Then use that xPos and yPos in the "drawPiece" function
 	for _, snakePiece := range snakePlayer.snakeBody {
-		// Tail
 		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
+			// Tail
 			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
-			// Other pieces
 		} else {
+			// Other pieces
 			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "circle")
 		}
 	}
-
-	// Update path
-	// TODO: Why isnt this properly extending the list?
-	// snakePath := append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath...)
 
 	// Update clock speed count
 	// TODO: Is there some way to control game fps or clock speed or ticks in ebitengine?
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
-		g.clockSpeedCount = 0
+
+		if len(snakePath) > len(snakePlayer.snakeBody)+1 {
+			snakeLength := len(snakePlayer.snakeBody)
+			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[len(snakePath)-snakeLength:]...)
+		} else {
+			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath...)
+			g.clockSpeedCount = 0
+		}
 	}
 
 }
