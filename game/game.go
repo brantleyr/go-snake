@@ -16,7 +16,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 )
@@ -159,10 +158,15 @@ func init() {
 	setupInitialSnake()
 
 	// Load basic font
-	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
+	roboto, err := os.ReadFile("fonts/Roboto-Regular.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
+	tt, err := opentype.Parse(roboto)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	baseFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    baseFontSize,
 		DPI:     dpi,
@@ -390,9 +394,9 @@ func drawTitle(screen *ebiten.Image) {
 	// Handle Menu
 	if menuItem == "new_game" {
 		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+190, color.White)
-		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+10, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-4, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
 	} else if menuItem == "exit" {
-		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)+10, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-4, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
 		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+270, color.White)
 	}
 }
@@ -626,7 +630,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth/3)-40, (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
-		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
+		text.Draw(screen, "Womp womp. Game over.\n\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
 		timerTicker.Stop()
 	}
 
