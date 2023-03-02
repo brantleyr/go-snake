@@ -158,11 +158,11 @@ func init() {
 	setupInitialSnake()
 
 	// Load basic font
-	roboto, err := os.ReadFile("fonts/Roboto-Regular.ttf")
+	externalFont, err := os.ReadFile("fonts/JungleAdventurer.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	tt, err := opentype.Parse(roboto)
+	tt, err := opentype.Parse(externalFont)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -393,11 +393,11 @@ func drawTitle(screen *ebiten.Image) {
 
 	// Handle Menu
 	if menuItem == "new_game" {
-		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+190, color.White)
-		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-4, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+190, color.White)
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
 	} else if menuItem == "exit" {
-		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-4, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
-		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+270, color.White)
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+270, color.White)
 	}
 }
 
