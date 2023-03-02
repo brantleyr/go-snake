@@ -5,6 +5,7 @@ import (
 	"image/color"
 	_ "image/png"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -26,6 +27,7 @@ const (
 	baseFontSize          = 36
 	titleFontSize         = 72
 	scoreFontSize         = 24
+	timerFontSize         = 24
 	GameTitle             = "Go Snake"
 	startGameText         = "Use arrow keys to guide Snake.\n    Press Enter to start."
 	drNickImageSrc        = "images/dr-nick.png"
@@ -76,6 +78,7 @@ var (
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
+	timerFont      font.Face
 	GameStarted    = false
 	GamePaused     = false
 	GameOver       = false
@@ -94,6 +97,9 @@ var (
 	zoomingBg	   = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
+	timeElapsed    = 0
+	timerDone      = make(chan bool)
+	timerTicker    = time.NewTicker(1 * time.Second)
 )
 
 func setupInitialSnake() {
@@ -181,6 +187,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	timerFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    timerFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	menuItem = "new_game"
 }
 
@@ -261,6 +275,8 @@ func (g *Game) Update() error {
 				GameStarted = true
 				GameOver = false
 				currScore = 0
+				timeElapsed = 1 // it starts slower than the first timer for some reason
+				timerTicker.Reset(1 * time.Second)
 				setupInitialSnake()
 			}
 		}
@@ -494,6 +510,19 @@ func showScore(screen *ebiten.Image) {
 
 }
 
+func doTimer() {
+	go func() {
+		for {
+			select {
+			case <-timerDone:
+				return
+			case <-timerTicker.C:
+				timeElapsed += 1
+			}
+		}
+	}()
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
@@ -553,6 +582,8 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Draw noms
 	if GameStarted {
 		doNoms(g, screen)
+		// Show timer
+		doTimer()
 	}
 
 	// Update clock speed count
@@ -585,9 +616,11 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 	}
 
+	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth / 5), (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
 		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
+		timerTicker.Stop()
 	}
 
 }
