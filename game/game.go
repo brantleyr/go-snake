@@ -114,7 +114,7 @@ func init() {
 		snakeBody{0, 1, 1},
 		snakeBody{0, 2, 0},
 	}
-	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
+	snakePlayer = snake{initialBodyPieces, 0, 3, "down"} // Head
 
 	// Load basic font
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
@@ -352,6 +352,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == false {
 		var moveCounter int
+
 		if g.clockSpeedCount == 0 {
 			moveCounter = 1
 		} else {
@@ -359,25 +360,17 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 
 		// Update snake
-		if snakePlayer.yPos > 0 {
-			if snakePlayer.direction == "up" {
-				snakePlayer.yPos -= moveCounter
-			}
+		if snakePlayer.yPos > 0 && snakePlayer.direction == "up" {
+			snakePlayer.yPos -= moveCounter
 		}
-		if snakePlayer.yPos < 19 {
-			if snakePlayer.direction == "down" {
-				snakePlayer.yPos += moveCounter
-			}
+		if snakePlayer.yPos < 19 && snakePlayer.direction == "down" {
+			snakePlayer.yPos += moveCounter
 		}
-		if snakePlayer.xPos > 0 {
-			if snakePlayer.direction == "left" {
-				snakePlayer.xPos -= moveCounter
-			}
+		if snakePlayer.xPos > 0 && snakePlayer.direction == "left" {
+			snakePlayer.xPos -= moveCounter
 		}
-		if snakePlayer.xPos < 19 {
-			if snakePlayer.direction == "right" {
-				snakePlayer.xPos += moveCounter
-			}
+		if snakePlayer.xPos < 19 && snakePlayer.direction == "right" {
+			snakePlayer.xPos += moveCounter
 		}
 	}
 
@@ -394,10 +387,22 @@ func doGame(g *Game, screen *ebiten.Image) {
 	drawPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "rect")
 
 	// Draw pieces
-	// TODO: Add "idx" here so that you can update the xPos and yPos of the snake piece segement
-	//		 Then use that xPos and yPos in the "drawPiece" function
-	for _, snakePiece := range snakePlayer.snakeBody {
-		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
+	for idx, snakePiece := range snakePlayer.snakeBody {
+		// Update snake pieces
+		// TODO: More directions than just right, and turn with the snake
+		// The pieces start at a negative index which is cutting off the snake as well
+		snakePiece.yPos = snakePlayer.yPos
+		snakePiece.xPos = snakePlayer.xPos - idx
+		// snakePiece.segment = len(snakePlayer.snakeBody)
+
+		log.Println("Snake Piece:", snakePiece.xPos, snakePiece.yPos, idx)
+		log.Println("Player:     ", snakePlayer.xPos, snakePlayer.yPos)
+		log.Println("Direction:  ", snakePlayer.direction)
+		log.Println("Segment:     ", snakePiece.segment)
+		log.Println("Body Length:", len(snakePlayer.snakeBody))
+
+		// TODO: Get the tail drawing again
+		if snakePiece.segment == (len(snakePlayer.snakeBody) - len(snakePath)) {
 			// Tail
 			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
 		} else {
@@ -410,16 +415,15 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// TODO: Is there some way to control game fps or clock speed or ticks in ebitengine?
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
-
-		if len(snakePath) > len(snakePlayer.snakeBody)+1 {
-			snakeLength := len(snakePlayer.snakeBody)
-			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[len(snakePath)-snakeLength:]...)
+		if len(snakePath) > len(snakePlayer.snakeBody) {
+			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[len(snakePath)-len(snakePlayer.snakeBody):]...)
 		} else {
 			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath...)
-			g.clockSpeedCount = 0
-		}
-	}
 
+		}
+
+		g.clockSpeedCount = 0
+	}
 }
 
 func doExit(g *Game) {
