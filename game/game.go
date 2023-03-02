@@ -36,6 +36,7 @@ const (
 	goImageSrc            = "images/golang.png"
 	snakeLogoImageSrc     = "images/snake-logo.png"
 	globBgImageSrc        = "images/green-bg.png"
+	appleImageSrc         = "images/apple.png"
 	gridHeight            = 20
 	gridWidth             = 25
 	gridSolidColor        = "#002200"
@@ -74,6 +75,7 @@ var (
 	goImage        *ebiten.Image
 	snakeLogo      *ebiten.Image
 	globBg         *ebiten.Image
+	apple          *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -150,6 +152,12 @@ func init() {
 
 	// Load snake logo
 	snakeLogo, _, err = ebitenutil.NewImageFromFile(snakeLogoImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Load global bg
+	apple, _, err = ebitenutil.NewImageFromFile(appleImageSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -461,6 +469,14 @@ func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, s
 	if shapeType == "triangle" {
 		//TODO: For tail, for now its a smaller cicle
 	}
+	if shapeType == "apple" {
+		// Logo and text on top
+		// radius := float64((float64(gridCellWidth/5) + float64(gridCellHeight/5)) / 2)
+		a := &ebiten.DrawImageOptions{}
+		a.GeoM.Scale(.1, .1)
+		a.GeoM.Translate(float64(ix*gridCellWidth)+5+float64(borderLeft), float64(iy*gridCellHeight)+2+float64(borderTop))
+		screen.DrawImage(apple, a)
+	}
 
 }
 
@@ -487,7 +503,7 @@ func doNoms(g *Game, screen *ebiten.Image) {
 		// Set the new nom and draw it on the screen
 		nomActive = true
 		currentNom = pathPair{randX, randY}
-		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "smallcircle")
+		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "apple")
 	}
 
 	// If theres already a nom, check to see if it intersects with the snake head or draw it
@@ -506,7 +522,7 @@ func doNoms(g *Game, screen *ebiten.Image) {
 			currScore += 1
 
 		} else {
-			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "smallcircle")
+			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "apple")
 		}
 	}
 }
@@ -515,9 +531,15 @@ func showScore(screen *ebiten.Image) {
 
 	diam := (float64(gridCellWidth/3) + float64(gridCellHeight/3))
 	radius := diam / 2
-	ebitenutil.DrawCircle(screen, float64(ScreenWidth/2)-diam+80, (borderTop/2)-.5, radius, ParseHexColor(nomColor))
 
-	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+65, (borderTop/2)+(int(radius)/2)+2, color.White)
+	// Draw the apple
+	a := &ebiten.DrawImageOptions{}
+	a.GeoM.Scale(.1, .1)
+	a.GeoM.Translate(float64(ScreenWidth/2)+15+float64(borderLeft), float64(borderTop/2)-18)
+	screen.DrawImage(apple, a)
+
+	// Score
+	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+50, (borderTop/2)+(int(radius)/2)+3, color.White)
 
 }
 
