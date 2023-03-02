@@ -20,9 +20,6 @@ import (
 )
 
 const (
-
-	// TODO: Dynamic screen widths/heights
-	//		 Fonts, DPI, font settings and images will also need to scale appropriately
 	DEBUG_MODE        = true
 	dpi               = 72
 	baseFontSize      = 36
@@ -85,8 +82,7 @@ var (
 )
 
 func setupInitialSnake() {
-	var initialBodyPieces []snakeBody
-	initialBodyPieces = []snakeBody{
+	var initialBodyPieces = []snakeBody{
 		snakeBody{0, 0, 2},
 		snakeBody{0, 1, 1},
 		snakeBody{0, 2, 0},
@@ -198,8 +194,8 @@ func (g *Game) Update() error {
 
 		// Handle "game" game state key events
 	} else if GameState == "game" {
-		if GameStarted == true && GameOver == false {
-			if GamePaused == false {
+		if GameStarted && !GameOver {
+			if !GamePaused {
 				if snakePlayer.direction != "up" && snakePlayer.direction != "down" {
 					if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
 						snakePlayer.direction = "up"
@@ -229,7 +225,7 @@ func (g *Game) Update() error {
 				GameStarted = true
 			}
 		}
-		if GameOver == true {
+		if GameOver {
 			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				GameStarted = true
 				GameOver = false
@@ -374,7 +370,7 @@ func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, s
 func doNoms(g *Game, screen *ebiten.Image) {
 
 	// Only generate a new nom if there isn't currently one
-	if nomActive == false {
+	if !nomActive {
 		notValidNom := true
 		var randX, randY int
 
@@ -398,7 +394,7 @@ func doNoms(g *Game, screen *ebiten.Image) {
 	}
 
 	// If theres already a nom, check to see if it intersects with the snake head or draw it
-	if nomActive == true {
+	if nomActive {
 		if snakePlayer.xPos == currentNom.xPos && snakePlayer.yPos == currentNom.yPos {
 			nomActive = false
 
@@ -420,7 +416,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	buildGrid(screen)
 
 	// Handle game started vs paused
-	if GameStarted == true && GamePaused == false && GameOver == false {
+	if GameStarted && !GamePaused && !GameOver {
 		var moveCounter int
 		if g.clockSpeedCount == 0 {
 			moveCounter = 1
@@ -444,9 +440,9 @@ func doGame(g *Game, screen *ebiten.Image) {
 	}
 
 	// Handle game started vs paused
-	if GameStarted == true && GamePaused == true {
+	if GameStarted && GamePaused {
 		text.Draw(screen, "Game Paused. Escape to resume.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
-	} else if GameStarted == false && GameOver == false {
+	} else if !GameStarted && !GameOver {
 		// Do not update snake
 		// Show start text
 		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)+20, (ScreenHeight/3)+180, color.White)
@@ -469,7 +465,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	}
 
 	// Draw noms
-	if GameStarted == true {
+	if GameStarted {
 		doNoms(g, screen)
 	}
 
@@ -478,7 +474,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
-		if GameStarted == true && GamePaused == false {
+		if GameStarted && !GamePaused {
 			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
 		}
 		g.clockSpeedCount = 0
@@ -508,10 +504,6 @@ func doGame(g *Game, screen *ebiten.Image) {
 		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
 	}
 
-}
-
-func doExit(g *Game) {
-	GameState = "exit"
 }
 
 func handleGameState(g *Game, screen *ebiten.Image) {
