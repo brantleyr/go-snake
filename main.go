@@ -20,6 +20,7 @@ func main() {
 	game.GameState = "intro"
 	game.GameStarted = false
 	game.GamePaused = false
+	game.GameOver = false
 
 	// Run the game
 	if err := ebiten.RunGame(&game.Game{}); err != nil {

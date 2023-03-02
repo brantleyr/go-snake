@@ -36,11 +36,10 @@ const (
 	goImageSrc        = "images/golang.png"
 	snakeLogoImageSrc = "images/snake-logo.png"
 	gridHeight        = 20
-	gridWidth         = 20
+	gridWidth         = 25
 	gridSolidColor    = "#002200"
 	pieceColor        = "#00ff00"
 	nomColor          = "#ff0000"
-	clockSpeed        = 30
 )
 
 type pathPair struct {
@@ -70,18 +69,37 @@ var (
 	snakeLogo      *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
-	GameStarted    bool
-	GamePaused     bool
-	GameState      string // intro, title, game, exit
+	GameStarted    = false
+	GamePaused     = false
+	GameOver       = false
+	GameState      = "title" // intro, title, game, exit
 	menuItem       string
-	ScreenWidth    = 1200
-	ScreenHeight   = 1024
+	ScreenWidth    = 1024
+	ScreenHeight   = 768
 	gridCellHeight int
 	gridCellWidth  int
 	snakePath      []pathPair
 	nomActive      = false
 	currentNom     pathPair
+	clockSpeed     = 20
 )
+
+func setupInitialSnake() {
+	var initialBodyPieces []snakeBody
+	initialBodyPieces = []snakeBody{
+		snakeBody{0, 0, 2},
+		snakeBody{0, 1, 1},
+		snakeBody{0, 2, 0},
+	}
+	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
+
+	// Initial Path
+	snakePath = []pathPair{
+		pathPair{0, 2},
+		pathPair{0, 1},
+		pathPair{0, 0},
+	}
+}
 
 func init() {
 	var err error
@@ -113,20 +131,7 @@ func init() {
 	}
 
 	// Make snake
-	var initialBodyPieces []snakeBody
-	initialBodyPieces = []snakeBody{
-		snakeBody{0, 0, 2},
-		snakeBody{0, 1, 1},
-		snakeBody{0, 2, 0},
-	}
-	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
-
-	// Initial Path
-	snakePath = []pathPair{
-		pathPair{0, 2},
-		pathPair{0, 1},
-		pathPair{0, 0},
-	}
+	setupInitialSnake()
 
 	// Load basic font
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
@@ -193,7 +198,7 @@ func (g *Game) Update() error {
 
 		// Handle "game" game state key events
 	} else if GameState == "game" {
-		if GameStarted == true {
+		if GameStarted == true && GameOver == false {
 			if GamePaused == false {
 				if snakePlayer.direction != "up" && snakePlayer.direction != "down" {
 					if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
@@ -222,6 +227,13 @@ func (g *Game) Update() error {
 		} else {
 			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				GameStarted = true
+			}
+		}
+		if GameOver == true {
+			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+				GameStarted = true
+				GameOver = false
+				setupInitialSnake()
 			}
 		}
 	}
@@ -331,8 +343,10 @@ func buildGrid(screen *ebiten.Image) {
 
 	gridCellWidth = ScreenWidth / gridWidth
 	gridCellHeight = ScreenHeight / gridHeight
-	for ix := 0; ix < gridCellWidth; ix++ {
-		for iy := 0; iy < gridCellHeight; iy++ {
+
+	for ix := 0; ix < gridWidth; ix++ {
+		for iy := 0; iy < gridHeight; iy++ {
+			//log.Println("grid cell",ix,",",iy)
 			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
 		}
 	}
@@ -387,8 +401,14 @@ func doNoms(g *Game, screen *ebiten.Image) {
 	if nomActive == true {
 		if snakePlayer.xPos == currentNom.xPos && snakePlayer.yPos == currentNom.yPos {
 			nomActive = false
+
+			// Add new snake piece
 			newSnakeBodyPiece := snakeBody{snakePlayer.xPos, snakePlayer.yPos, len(snakePlayer.snakeBody)}
 			snakePlayer.snakeBody = append([]snakeBody{newSnakeBodyPiece}, snakePlayer.snakeBody...)
+
+			// TODO: Make clock speed faster when you acquire more noms
+			// clockSpeed -= someNumber and floor() it so it only gets so fast
+
 		} else {
 			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "smallcircle")
 		}
@@ -400,7 +420,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	buildGrid(screen)
 
 	// Handle game started vs paused
-	if GameStarted == true && GamePaused == false {
+	if GameStarted == true && GamePaused == false && GameOver == false {
 		var moveCounter int
 		if g.clockSpeedCount == 0 {
 			moveCounter = 1
@@ -409,32 +429,24 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 
 		// Update snake
-		if snakePlayer.yPos > 0 {
-			if snakePlayer.direction == "up" {
-				snakePlayer.yPos -= moveCounter
-			}
+		if snakePlayer.direction == "up" {
+			snakePlayer.yPos -= moveCounter
 		}
-		if snakePlayer.yPos < 19 {
-			if snakePlayer.direction == "down" {
-				snakePlayer.yPos += moveCounter
-			}
+		if snakePlayer.direction == "down" {
+			snakePlayer.yPos += moveCounter
 		}
-		if snakePlayer.xPos > 0 {
-			if snakePlayer.direction == "left" {
-				snakePlayer.xPos -= moveCounter
-			}
+		if snakePlayer.direction == "left" {
+			snakePlayer.xPos -= moveCounter
 		}
-		if snakePlayer.xPos < 19 {
-			if snakePlayer.direction == "right" {
-				snakePlayer.xPos += moveCounter
-			}
+		if snakePlayer.direction == "right" {
+			snakePlayer.xPos += moveCounter
 		}
 	}
 
 	// Handle game started vs paused
 	if GameStarted == true && GamePaused == true {
 		text.Draw(screen, "Game Paused. Escape to resume.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
-	} else if GameStarted == false {
+	} else if GameStarted == false && GameOver == false {
 		// Do not update snake
 		// Show start text
 		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)+20, (ScreenHeight/3)+180, color.White)
@@ -463,12 +475,37 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	// Update clock speed count
 	// TODO: Is there some way to control game fps or clock speed or ticks in ebitengine?
+
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
 		if GameStarted == true && GamePaused == false {
 			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
 		}
 		g.clockSpeedCount = 0
+	}
+
+	// Check collision paths to end game
+	for idx, snakePathPair := range snakePath {
+		// Check if the head collided with the body
+		if idx != 0 {
+			// Did the snake collide with itself?
+			if snakePlayer.xPos == snakePathPair.xPos && snakePlayer.yPos == snakePathPair.yPos {
+				GameStarted = false
+				GameOver = true
+			}
+		}
+		// Check if the head collided with a wall
+		if idx == 0 {
+			if snakePlayer.xPos >= gridWidth || snakePlayer.xPos < 0 || snakePlayer.yPos >= gridHeight || snakePlayer.yPos < 0 {
+				GameStarted = false
+				GameOver = true
+			}
+		}
+	}
+
+	// Show Game Over
+	if GameOver {
+		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-150, (ScreenHeight / 2), color.White)
 	}
 
 }
