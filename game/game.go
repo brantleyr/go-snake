@@ -536,6 +536,8 @@ func doGame(g *Game, screen *ebiten.Image) {
 		var moveCounter int
 		if g.clockSpeedCount == 0 {
 			moveCounter = 1
+			// Show timer
+			doTimer()
 		} else {
 			moveCounter = 0
 		}
@@ -583,8 +585,6 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Draw noms
 	if GameStarted {
 		doNoms(g, screen)
-		// Show timer
-		doTimer()
 	}
 
 	// Update clock speed count
