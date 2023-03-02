@@ -116,6 +116,13 @@ func init() {
 	}
 	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
 
+	// Initial Path
+	snakePath = []pathPair{
+		pathPair{0, 2},
+		pathPair{0, 1},
+		pathPair{0, 0},
+	}
+
 	// Load basic font
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
@@ -396,7 +403,9 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Draw pieces
 	// TODO: Add "idx" here so that you can update the xPos and yPos of the snake piece segement
 	//		 Then use that xPos and yPos in the "drawPiece" function
-	for _, snakePiece := range snakePlayer.snakeBody {
+	for idx, snakePiece := range snakePlayer.snakeBody {
+		snakePlayer.snakeBody[idx].xPos = snakePath[snakePiece.segment].xPos
+		snakePlayer.snakeBody[idx].yPos = snakePath[snakePiece.segment].yPos
 		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
 			// Tail
 			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
@@ -410,15 +419,13 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// TODO: Is there some way to control game fps or clock speed or ticks in ebitengine?
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
-
-		if len(snakePath) > len(snakePlayer.snakeBody)+1 {
-			snakeLength := len(snakePlayer.snakeBody)
-			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[len(snakePath)-snakeLength:]...)
-		} else {
-			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath...)
-			g.clockSpeedCount = 0
+		if GameStarted == true && GamePaused == false {
+			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
 		}
+		g.clockSpeedCount = 0
 	}
+
+	log.Println(snakePath)
 
 }
 
