@@ -535,11 +535,11 @@ func showScore(screen *ebiten.Image) {
 	// Draw the apple
 	a := &ebiten.DrawImageOptions{}
 	a.GeoM.Scale(.1, .1)
-	a.GeoM.Translate(float64(ScreenWidth/2)+15+float64(borderLeft), float64(borderTop/2)-18)
+	a.GeoM.Translate(float64(ScreenWidth/2)+105+float64(borderLeft), float64(borderTop/2)-18)
 	screen.DrawImage(apple, a)
 
 	// Score
-	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+50, (borderTop/2)+(int(radius)/2)+3, color.White)
+	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+140, (borderTop/2)+(int(radius)/2)+3, color.White)
 
 }
 
