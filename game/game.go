@@ -11,13 +11,15 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
-
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 )
 
 const (
@@ -207,6 +209,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	menuItem = "new_game"
 }
 
@@ -652,6 +655,30 @@ func doGame(g *Game, screen *ebiten.Image) {
 	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth/3)-40, (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
+		// Load Death sound
+		log.Println("Load death")
+		f, err := os.Open("sounds/death.mp3")
+		if err != nil {
+			log.Fatal(err)
+		}
+		streamer, format, err := mp3.Decode(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer streamer.Close()
+
+		// Initiliaze speaker to play Death sound
+		log.Println("Init speaker")
+		speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+
+		log.Println("Play death")
+		done := make(chan bool)
+		speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+			done <- true
+		})))
+
+		<-done
+
 		text.Draw(screen, "Womp womp. Game over.\n\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
 		timerTicker.Stop()
 	}
