@@ -34,6 +34,7 @@ const (
 	ebImageSrc            = "images/ebitengine.png"
 	goImageSrc            = "images/golang.png"
 	snakeLogoImageSrc     = "images/snake-logo.png"
+	titleBgImageSrc       = "images/green-bg.png"
 	gridHeight            = 20
 	gridWidth             = 25
 	gridSolidColor        = "#002200"
@@ -71,6 +72,7 @@ var (
 	ebImage        *ebiten.Image
 	goImage        *ebiten.Image
 	snakeLogo      *ebiten.Image
+	titleBg	       *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -88,6 +90,8 @@ var (
 	currentNom     pathPair
 	clockSpeed     = 20
 	currScore      = 0
+	titleBgRot     = 0.75
+	zoomingBg	   = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
 )
@@ -110,6 +114,7 @@ func setupInitialSnake() {
 
 func init() {
 	var err error
+
 	// Load intro images
 	drNick, _, err = ebitenutil.NewImageFromFile(drNickImageSrc)
 	if err != nil {
@@ -131,6 +136,13 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Load title bg
+	titleBg, _, err = ebitenutil.NewImageFromFile(titleBgImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Load snake logo
 	snakeLogo, _, err = ebitenutil.NewImageFromFile(snakeLogoImageSrc)
 	if err != nil {
@@ -327,12 +339,18 @@ func doIntro(g *Game, screen *ebiten.Image) {
 }
 
 func drawTitle(screen *ebiten.Image) {
+	// Background
+	titleBgOp := &ebiten.DrawImageOptions{}
+	titleBgOp.GeoM.Scale(titleBgRot, titleBgRot)
+	screen.DrawImage(titleBg, titleBgOp)
+
 	// Logo and text on top
 	snake := &ebiten.DrawImageOptions{}
 	snake.GeoM.Scale(.50, .50)
 	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.203125), float64(ScreenHeight)*0.06125)
 	screen.DrawImage(snakeLogo, snake)
 
+	// Handle Menu
 	if menuItem == "new_game" {
 		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+90, color.White)
 		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+170, ParseHexColor("#8c8c8c"))
@@ -340,6 +358,21 @@ func drawTitle(screen *ebiten.Image) {
 		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
 		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+170, color.White)
 	}
+
+	if zoomingBg {
+		titleBgRot += .0001
+	} else {
+		titleBgRot -= .0001
+	}
+
+
+	if titleBgRot >= 1.25 {
+		zoomingBg = false
+	}
+	if titleBgRot <= .75 {
+		zoomingBg = true
+	}
+
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
