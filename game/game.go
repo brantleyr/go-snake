@@ -5,6 +5,7 @@ import (
 	"image/color"
 	_ "image/png"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -26,6 +27,7 @@ const (
 	baseFontSize          = 36
 	titleFontSize         = 72
 	scoreFontSize         = 24
+	timerFontSize         = 24
 	GameTitle             = "Go Snake"
 	startGameText         = "Use arrow keys to guide Snake.\n    Press Enter to start."
 	drNickImageSrc        = "images/dr-nick.png"
@@ -76,6 +78,7 @@ var (
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
+	timerFont      font.Face
 	GameStarted    = false
 	GamePaused     = false
 	GameOver       = false
@@ -94,6 +97,9 @@ var (
 	zoomingBg	   = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
+	timeElapsed    = 0
+	timerDone      = make(chan bool)
+	timerTicker    = time.NewTicker(1 * time.Second)
 )
 
 func setupInitialSnake() {
@@ -181,6 +187,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	timerFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    timerFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	menuItem = "new_game"
 }
 
@@ -218,7 +232,7 @@ func (g *Game) Update() error {
 				// They just moved up
 				menuItem = "exit"
 			} else if menuItem == "exit" {
-				// Loop to the down
+				// Loop to the bottom
 				menuItem = "new_game"
 			}
 		}
@@ -249,6 +263,8 @@ func (g *Game) Update() error {
 			} else {
 				if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 					GamePaused = false
+				} else if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+					GameState = "exit"
 				}
 			}
 		} else {
@@ -261,7 +277,11 @@ func (g *Game) Update() error {
 				GameStarted = true
 				GameOver = false
 				currScore = 0
+				timeElapsed = 1 // it starts slower than the first timer for some reason
+				timerTicker.Reset(1 * time.Second)
 				setupInitialSnake()
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+				GameState = "exit"
 			}
 		}
 	}
@@ -375,15 +395,13 @@ func drawTitle(screen *ebiten.Image) {
 		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
 		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+170, color.White)
 	}
+
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
 
 	// TODO: Add some sort of way to detect the center of the screen
 	// TODO: Add some sort of BG overlay so font is more easily readable
-
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
-
 	drawTitle(screen)
 
 }
@@ -502,6 +520,19 @@ func showScore(screen *ebiten.Image) {
 
 }
 
+func doTimer() {
+	go func() {
+		for {
+			select {
+			case <-timerDone:
+				return
+			case <-timerTicker.C:
+				timeElapsed += 1
+			}
+		}
+	}()
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
@@ -514,6 +545,8 @@ func doGame(g *Game, screen *ebiten.Image) {
 		var moveCounter int
 		if g.clockSpeedCount == 0 {
 			moveCounter = 1
+			// Show timer
+			doTimer()
 		} else {
 			moveCounter = 0
 		}
@@ -535,11 +568,11 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	// Handle game started vs paused
 	if GameStarted && GamePaused {
-		text.Draw(screen, "Game Paused. Escape to resume.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+		text.Draw(screen, "Game Paused. Escape to resume\nor Q to quit.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
 	} else if !GameStarted && !GameOver {
 		// Do not update snake
 		// Show start text
-		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)+20, (ScreenHeight/3)+180, color.White)
+		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-30, (ScreenHeight/3)+130, color.White)
 	}
 
 	// Draw head
@@ -593,9 +626,11 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 	}
 
+	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth / 5), (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
-		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
+		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
+		timerTicker.Stop()
 	}
 
 }
