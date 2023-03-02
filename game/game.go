@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/image/font"
@@ -20,23 +21,29 @@ import (
 )
 
 const (
-	DEBUG_MODE        = true
-	dpi               = 72
-	baseFontSize      = 36
-	titleFontSize     = 72
-	GameTitle         = "Go Snake"
-	startGameText     = "Use arrow keys to guide Snake.\n    Press Enter to start."
-	drNickImageSrc    = "images/dr-nick.png"
-	schImageSrc       = "images/schneider.png"
-	rhImageSrc        = "images/red-hat.png"
-	ebImageSrc        = "images/ebitengine.png"
-	goImageSrc        = "images/golang.png"
-	snakeLogoImageSrc = "images/snake-logo.png"
-	gridHeight        = 20
-	gridWidth         = 25
-	gridSolidColor    = "#002200"
-	pieceColor        = "#00ff00"
-	nomColor          = "#ff0000"
+	DEBUG_MODE            = true
+	dpi                   = 72
+	baseFontSize          = 36
+	titleFontSize         = 72
+	scoreFontSize         = 24
+	GameTitle             = "Go Snake"
+	startGameText         = "Use arrow keys to guide Snake.\n    Press Enter to start."
+	drNickImageSrc        = "images/dr-nick.png"
+	schImageSrc           = "images/schneider.png"
+	rhImageSrc            = "images/red-hat.png"
+	ebImageSrc            = "images/ebitengine.png"
+	goImageSrc            = "images/golang.png"
+	snakeLogoImageSrc     = "images/snake-logo.png"
+	gridHeight            = 20
+	gridWidth             = 25
+	gridSolidColor        = "#002200"
+	pieceColor            = "#00ff00"
+	nomColor              = "#ff0000"
+	backgroundBorderColor = "#004400"
+	borderTop             = 50
+	borderBottom          = 10
+	borderLeft            = 10
+	borderRight           = 10
 )
 
 type pathPair struct {
@@ -66,6 +73,7 @@ var (
 	snakeLogo      *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
+	scoreFont      font.Face
 	GameStarted    = false
 	GamePaused     = false
 	GameOver       = false
@@ -79,6 +87,7 @@ var (
 	nomActive      = false
 	currentNom     pathPair
 	clockSpeed     = 20
+	currScore      = 0
 )
 
 func setupInitialSnake() {
@@ -144,6 +153,14 @@ func init() {
 	}
 	titleFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    titleFontSize,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	scoreFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    scoreFontSize,
 		DPI:     dpi,
 		Hinting: font.HintingFull,
 	})
@@ -229,6 +246,7 @@ func (g *Game) Update() error {
 			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				GameStarted = true
 				GameOver = false
+				currScore = 0
 				setupInitialSnake()
 			}
 		}
@@ -337,13 +355,14 @@ func getGridColor(ix int, iy int) color.Color {
 
 func buildGrid(screen *ebiten.Image) {
 
-	gridCellWidth = ScreenWidth / gridWidth
-	gridCellHeight = ScreenHeight / gridHeight
+	ebitenutil.DrawRect(screen, 0, 0, float64(ScreenWidth), float64(ScreenHeight), ParseHexColor(backgroundBorderColor))
+
+	gridCellWidth = (ScreenWidth - borderLeft - borderRight) / gridWidth
+	gridCellHeight = (ScreenHeight - borderTop - borderBottom) / gridHeight
 
 	for ix := 0; ix < gridWidth; ix++ {
 		for iy := 0; iy < gridHeight; iy++ {
-			//log.Println("grid cell",ix,",",iy)
-			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
+			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
 		}
 	}
 
@@ -351,15 +370,15 @@ func buildGrid(screen *ebiten.Image) {
 
 func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
 	if shapeType == "rect" {
-		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), theColor)
+		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), theColor)
 	}
 	if shapeType == "smallcircle" {
 		radius := float64((float64(gridCellWidth/5) + float64(gridCellHeight/5)) / 2)
-		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*2.5), float64(iy*gridCellHeight)+(radius*2.5), radius, theColor)
+		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*2.5)+float64(borderLeft), float64(iy*gridCellHeight)+(radius*2.5)+float64(borderTop), radius, theColor)
 	}
 	if shapeType == "circle" {
 		radius := float64((float64(gridCellWidth/3) + float64(gridCellHeight/3)) / 2)
-		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*1.5), float64(iy*gridCellHeight)+(radius*1.5), radius, theColor)
+		ebitenutil.DrawCircle(screen, float64(ix*gridCellWidth)+(radius*1.5)+float64(borderLeft), float64(iy*gridCellHeight)+(radius*1.5)+float64(borderTop), radius, theColor)
 	}
 	if shapeType == "triangle" {
 		//TODO: For tail, for now its a smaller cicle
@@ -405,15 +424,31 @@ func doNoms(g *Game, screen *ebiten.Image) {
 			// TODO: Make clock speed faster when you acquire more noms
 			// clockSpeed -= someNumber and floor() it so it only gets so fast
 
+			// Increment score
+			currScore += 1
+
 		} else {
 			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "smallcircle")
 		}
 	}
 }
 
+func showScore(screen *ebiten.Image) {
+
+	diam := (float64(gridCellWidth/3) + float64(gridCellHeight/3))
+	radius := diam / 2
+	ebitenutil.DrawCircle(screen, float64(ScreenWidth/2)-diam, borderTop/2, radius, ParseHexColor(nomColor))
+
+	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius), (borderTop/2)+(int(radius)/2), color.White)
+
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
+
+	// Show score count
+	showScore(screen)
 
 	// Handle game started vs paused
 	if GameStarted && !GamePaused && !GameOver {
