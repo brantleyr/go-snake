@@ -83,17 +83,17 @@ var (
 
 func setupInitialSnake() {
 	var initialBodyPieces = []snakeBody{
-		snakeBody{0, 0, 2},
-		snakeBody{0, 1, 1},
-		snakeBody{0, 2, 0},
+		{0, 0, 2},
+		{0, 1, 1},
+		{0, 2, 0},
 	}
 	snakePlayer = snake{initialBodyPieces, 0, 3, "down"}
 
 	// Initial Path
 	snakePath = []pathPair{
-		pathPair{0, 2},
-		pathPair{0, 1},
-		pathPair{0, 0},
+		{0, 2},
+		{0, 1},
+		{0, 0},
 	}
 }
 
