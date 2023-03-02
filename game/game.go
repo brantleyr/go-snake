@@ -448,9 +448,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	buildGrid(screen)
 
 	// Show score count
-	if GameStarted && !GamePaused {
-		showScore(screen)
-	}
+	showScore(screen)
 
 	// Handle game started vs paused
 	if GameStarted && !GamePaused && !GameOver {
