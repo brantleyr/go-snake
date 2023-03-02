@@ -34,7 +34,7 @@ const (
 	ebImageSrc            = "images/ebitengine.png"
 	goImageSrc            = "images/golang.png"
 	snakeLogoImageSrc     = "images/snake-logo.png"
-	titleBgImageSrc       = "images/green-bg.png"
+	globBgImageSrc        = "images/green-bg.png"
 	gridHeight            = 20
 	gridWidth             = 25
 	gridSolidColor        = "#002200"
@@ -72,7 +72,7 @@ var (
 	ebImage        *ebiten.Image
 	goImage        *ebiten.Image
 	snakeLogo      *ebiten.Image
-	titleBg	       *ebiten.Image
+	globBg	       *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -90,7 +90,7 @@ var (
 	currentNom     pathPair
 	clockSpeed     = 20
 	currScore      = 0
-	titleBgRot     = 0.75
+	globBgRot     = 0.75
 	zoomingBg	   = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
@@ -137,8 +137,8 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// Load title bg
-	titleBg, _, err = ebitenutil.NewImageFromFile(titleBgImageSrc)
+	// Load global bg
+	globBg, _, err = ebitenutil.NewImageFromFile(globBgImageSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -338,11 +338,28 @@ func doIntro(g *Game, screen *ebiten.Image) {
 
 }
 
+func drawBg(screen *ebiten.Image) {
+	globBgOp := &ebiten.DrawImageOptions{}
+	globBgOp.GeoM.Scale(globBgRot, globBgRot)
+	screen.DrawImage(globBg, globBgOp)
+
+	if zoomingBg {
+		globBgRot += .0001
+	} else {
+		globBgRot -= .0001
+	}
+
+	if globBgRot >= 1.25 {
+		zoomingBg = false
+	}
+	if globBgRot <= .75 {
+		zoomingBg = true
+	}
+}
+
 func drawTitle(screen *ebiten.Image) {
 	// Background
-	titleBgOp := &ebiten.DrawImageOptions{}
-	titleBgOp.GeoM.Scale(titleBgRot, titleBgRot)
-	screen.DrawImage(titleBg, titleBgOp)
+	drawBg(screen)
 
 	// Logo and text on top
 	snake := &ebiten.DrawImageOptions{}
@@ -358,21 +375,6 @@ func drawTitle(screen *ebiten.Image) {
 		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
 		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+170, color.White)
 	}
-
-	if zoomingBg {
-		titleBgRot += .0001
-	} else {
-		titleBgRot -= .0001
-	}
-
-
-	if titleBgRot >= 1.25 {
-		zoomingBg = false
-	}
-	if titleBgRot <= .75 {
-		zoomingBg = true
-	}
-
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
@@ -406,11 +408,17 @@ func getGridColor(ix int, iy int) color.Color {
 
 func buildGrid(screen *ebiten.Image) {
 
-	ebitenutil.DrawRect(screen, 0, 0, float64(ScreenWidth), float64(ScreenHeight), ParseHexColor(backgroundBorderColor))
+	// Draw BG
+	drawBg(screen)
 
+	// Draw Grid Border
+	ebitenutil.DrawRect(screen, float64(borderLeft-2), float64(borderTop-2), float64(ScreenWidth-borderRight-borderLeft), float64(ScreenHeight-borderBottom-borderTop-2), ParseHexColor("#009900"))
+
+	// Calculate Grid width using borders
 	gridCellWidth = (ScreenWidth - borderLeft - borderRight) / gridWidth
 	gridCellHeight = (ScreenHeight - borderTop - borderBottom) / gridHeight
 
+	// Draw grid
 	for ix := 0; ix < gridWidth; ix++ {
 		for iy := 0; iy < gridHeight; iy++ {
 			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
