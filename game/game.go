@@ -475,7 +475,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
 		if GameStarted && !GamePaused {
-			snakePath = append([]pathPair{pathPair{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
+			snakePath = append([]pathPair{{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
 		}
 		g.clockSpeedCount = 0
 	}
