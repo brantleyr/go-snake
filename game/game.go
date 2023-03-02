@@ -355,9 +355,6 @@ func drawTitle(screen *ebiten.Image) {
 		zoomingBg = true
 	}
 
-
-
-	log.Println(titleBgRot)
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
