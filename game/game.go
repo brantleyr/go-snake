@@ -263,6 +263,8 @@ func (g *Game) Update() error {
 			} else {
 				if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 					GamePaused = false
+				} else if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+					GameState = "exit"
 				}
 			}
 		} else {
@@ -559,7 +561,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	// Handle game started vs paused
 	if GameStarted && GamePaused {
-		text.Draw(screen, "Game Paused. Escape to resume.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+		text.Draw(screen, "Game Paused. Escape to resume\nor Q to quit.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
 	} else if !GameStarted && !GameOver {
 		// Do not update snake
 		// Show start text
