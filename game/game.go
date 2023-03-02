@@ -563,7 +563,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	} else if !GameStarted && !GameOver {
 		// Do not update snake
 		// Show start text
-		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)+20, (ScreenHeight/3)+180, color.White)
+		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-30, (ScreenHeight/3)+130, color.White)
 	}
 
 	// Draw head
