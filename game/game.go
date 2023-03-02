@@ -264,31 +264,31 @@ func doIntro(g *Game, screen *ebiten.Image) {
 	// Show images
 	// Dr. Nick
 	nickOp := &ebiten.DrawImageOptions{}
-	nickOp.GeoM.Scale(.5, .5)
-	nickOp.GeoM.Translate(float64(ScreenWidth)*0.1171875, float64(ScreenHeight)*0.1953125)
+	nickOp.GeoM.Scale(.4, .4)
+	nickOp.GeoM.Translate(float64(ScreenWidth)*0.0571875, float64(ScreenHeight)*0.1953125)
 	screen.DrawImage(drNick, nickOp)
 
 	// Schneider
 	schOp := &ebiten.DrawImageOptions{}
-	schOp.GeoM.Scale(.80, .80)
-	schOp.GeoM.Translate(float64(ScreenWidth)*0.390625, float64(ScreenHeight)*0.1953125)
+	schOp.GeoM.Scale(.70, .70)
+	schOp.GeoM.Translate(float64(ScreenWidth)*0.370625, float64(ScreenHeight)*0.1853125)
 	screen.DrawImage(schImage, schOp)
 
 	// Red Hat
 	rhOp := &ebiten.DrawImageOptions{}
-	rhOp.GeoM.Scale(1.3, 1.3)
-	rhOp.GeoM.Translate(float64(ScreenWidth)*0.6640625, float64(ScreenHeight)*0.1953125)
+	rhOp.GeoM.Scale(1.2, 1.2)
+	rhOp.GeoM.Translate(float64(ScreenWidth)*0.6940625, float64(ScreenHeight)*0.1653125)
 	screen.DrawImage(rhImage, rhOp)
 
 	// Ebitengine
 	ebOp := &ebiten.DrawImageOptions{}
-	ebOp.GeoM.Scale(1.3, 1.3)
-	ebOp.GeoM.Translate(float64(ScreenWidth)*0.1953125, float64(ScreenHeight)*0.46875)
+	ebOp.GeoM.Scale(1.2, 1.2)
+	ebOp.GeoM.Translate(float64(ScreenWidth)*0.0571875, float64(ScreenHeight)*0.56875)
 	screen.DrawImage(ebImage, ebOp)
 
 	// Golang
 	goOp := &ebiten.DrawImageOptions{}
-	goOp.GeoM.Scale(.50, .50)
+	goOp.GeoM.Scale(.40, .40)
 	goOp.GeoM.Translate(float64(ScreenWidth)*0.5859375, float64(ScreenHeight)*0.46875)
 	screen.DrawImage(goImage, goOp)
 
@@ -298,7 +298,7 @@ func drawTitle(screen *ebiten.Image) {
 	// Logo and text on top
 	snake := &ebiten.DrawImageOptions{}
 	snake.GeoM.Scale(.50, .50)
-	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.203125), float64(ScreenHeight)*0.08125)
+	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.203125), float64(ScreenHeight)*0.06125)
 	screen.DrawImage(snakeLogo, snake)
 
 	if menuItem == "new_game" {
@@ -505,7 +505,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 
 	// Show Game Over
 	if GameOver {
-		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-150, (ScreenHeight / 2), color.White)
+		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
 	}
 
 }
