@@ -425,8 +425,6 @@ func doGame(g *Game, screen *ebiten.Image) {
 		g.clockSpeedCount = 0
 	}
 
-	log.Println(snakePath)
-
 }
 
 func doExit(g *Game) {
