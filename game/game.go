@@ -88,6 +88,8 @@ var (
 	currentNom     pathPair
 	clockSpeed     = 20
 	currScore      = 0
+	introOpacity   = 0.0
+	fadingOutIntro = false
 )
 
 func setupInitialSnake() {
@@ -178,7 +180,7 @@ func (g *Game) Update() error {
 	// Handle "intro" game state key events
 	if GameState == "intro" {
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			GameState = "title"
+			fadingOutIntro = true
 		}
 
 		// Handle "title" game state key events
@@ -272,39 +274,55 @@ func ParseHexColor(s string) (c color.RGBA) {
 
 func doIntro(g *Game, screen *ebiten.Image) {
 
-	// TODO: Clean up these images and spacing
-	//	     Try to find a way to dynamically place them instead of hard-coding
-
 	// Show images
 	// Dr. Nick
 	nickOp := &ebiten.DrawImageOptions{}
 	nickOp.GeoM.Scale(.4, .4)
 	nickOp.GeoM.Translate(float64(ScreenWidth)*0.0571875, float64(ScreenHeight)*0.1953125)
+	nickOp.ColorM.Scale(1, 1, 1, introOpacity)
 	screen.DrawImage(drNick, nickOp)
 
 	// Schneider
 	schOp := &ebiten.DrawImageOptions{}
 	schOp.GeoM.Scale(.70, .70)
 	schOp.GeoM.Translate(float64(ScreenWidth)*0.370625, float64(ScreenHeight)*0.1853125)
+	schOp.ColorM.Scale(1, 1, 1, introOpacity)
 	screen.DrawImage(schImage, schOp)
 
 	// Red Hat
 	rhOp := &ebiten.DrawImageOptions{}
 	rhOp.GeoM.Scale(1.2, 1.2)
 	rhOp.GeoM.Translate(float64(ScreenWidth)*0.6940625, float64(ScreenHeight)*0.1653125)
+	rhOp.ColorM.Scale(1, 1, 1, introOpacity)
 	screen.DrawImage(rhImage, rhOp)
 
 	// Ebitengine
 	ebOp := &ebiten.DrawImageOptions{}
 	ebOp.GeoM.Scale(1.2, 1.2)
 	ebOp.GeoM.Translate(float64(ScreenWidth)*0.0571875, float64(ScreenHeight)*0.56875)
+	ebOp.ColorM.Scale(1, 1, 1, introOpacity)
 	screen.DrawImage(ebImage, ebOp)
 
 	// Golang
 	goOp := &ebiten.DrawImageOptions{}
 	goOp.GeoM.Scale(.40, .40)
 	goOp.GeoM.Translate(float64(ScreenWidth)*0.5859375, float64(ScreenHeight)*0.46875)
+	goOp.ColorM.Scale(1, 1, 1, introOpacity)
 	screen.DrawImage(goImage, goOp)
+
+	// Increment opacity (fade in)
+	if fadingOutIntro {
+		introOpacity -= .01
+		if introOpacity <= 0 {
+			GameState = "title"
+			fadingOutIntro = false
+		}
+	} else {
+		introOpacity += .01
+		if introOpacity >= 1 {
+			introOpacity = 1
+		}
+	}
 
 }
 
