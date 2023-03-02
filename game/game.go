@@ -398,9 +398,6 @@ func doTitle(g *Game, screen *ebiten.Image) {
 
 	// TODO: Add some sort of way to detect the center of the screen
 	// TODO: Add some sort of BG overlay so font is more easily readable
-
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
-
 	drawTitle(screen)
 
 }
