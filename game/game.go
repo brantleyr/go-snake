@@ -74,7 +74,7 @@ var (
 	ebImage        *ebiten.Image
 	goImage        *ebiten.Image
 	snakeLogo      *ebiten.Image
-	titleBg	       *ebiten.Image
+	titleBg        *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -94,7 +94,7 @@ var (
 	clockSpeed     = 20
 	currScore      = 0
 	titleBgRot     = 0.75
-	zoomingBg	   = true
+	zoomingBg      = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
 	timeElapsed    = 0
@@ -232,7 +232,7 @@ func (g *Game) Update() error {
 				// They just moved up
 				menuItem = "exit"
 			} else if menuItem == "exit" {
-				// Loop to the down
+				// Loop to the bottom
 				menuItem = "new_game"
 			}
 		}
@@ -278,6 +278,8 @@ func (g *Game) Update() error {
 				timeElapsed = 1 // it starts slower than the first timer for some reason
 				timerTicker.Reset(1 * time.Second)
 				setupInitialSnake()
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+				GameState = "exit"
 			}
 		}
 	}
@@ -380,7 +382,6 @@ func drawTitle(screen *ebiten.Image) {
 	} else {
 		titleBgRot -= .0001
 	}
-
 
 	if titleBgRot >= 1.25 {
 		zoomingBg = false
@@ -619,7 +620,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth / 5), (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
-		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
+		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
 		timerTicker.Stop()
 	}
 
