@@ -5,7 +5,9 @@ import (
 	"image/color"
 	_ "image/png"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -37,6 +39,7 @@ const (
 	gridWidth         = 20
 	gridSolidColor    = "#002200"
 	pieceColor        = "#00ff00"
+	nomColor          = "#ff0000"
 	clockSpeed        = 30
 )
 
@@ -76,6 +79,8 @@ var (
 	gridCellHeight int
 	gridCellWidth  int
 	snakePath      []pathPair
+	nomActive      = false
+	currentNom     pathPair
 )
 
 func init() {
@@ -334,7 +339,7 @@ func buildGrid(screen *ebiten.Image) {
 
 }
 
-func drawPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
+func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
 	if shapeType == "rect" {
 		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth), float64(iy*gridCellHeight), float64(gridCellWidth), float64(gridCellHeight), theColor)
 	}
@@ -350,6 +355,44 @@ func drawPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shape
 		//TODO: For tail, for now its a smaller cicle
 	}
 
+}
+
+func doNoms(g *Game, screen *ebiten.Image) {
+
+	// Only generate a new nom if there isn't currently one
+	if nomActive == false {
+		notValidNom := true
+		var randX, randY int
+
+		// Generate random x,y pairs until it is not found in the existing snake path
+		for notValidNom {
+			rand.Seed(time.Now().UnixNano())
+			randX = rand.Intn(gridWidth - 1)
+			randY = rand.Intn(gridHeight - 1)
+			notValidNom = false
+			for _, pathPair := range snakePath {
+				if pathPair.xPos == randX && pathPair.yPos == randY {
+					notValidNom = true
+					break
+				}
+			}
+		}
+		// Set the new nom and draw it on the screen
+		nomActive = true
+		currentNom = pathPair{randX, randY}
+		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "smallcircle")
+	}
+
+	// If theres already a nom, check to see if it intersects with the snake head or draw it
+	if nomActive == true {
+		if snakePlayer.xPos == currentNom.xPos && snakePlayer.yPos == currentNom.yPos {
+			nomActive = false
+			newSnakeBodyPiece := snakeBody{snakePlayer.xPos, snakePlayer.yPos, len(snakePlayer.snakeBody)}
+			snakePlayer.snakeBody = append([]snakeBody{newSnakeBodyPiece}, snakePlayer.snakeBody...)
+		} else {
+			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "smallcircle")
+		}
+	}
 }
 
 func doGame(g *Game, screen *ebiten.Image) {
@@ -398,21 +441,24 @@ func doGame(g *Game, screen *ebiten.Image) {
 	}
 
 	// Draw head
-	drawPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "rect")
+	drawGridPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "rect")
 
 	// Draw pieces
-	// TODO: Add "idx" here so that you can update the xPos and yPos of the snake piece segement
-	//		 Then use that xPos and yPos in the "drawPiece" function
 	for idx, snakePiece := range snakePlayer.snakeBody {
 		snakePlayer.snakeBody[idx].xPos = snakePath[snakePiece.segment].xPos
 		snakePlayer.snakeBody[idx].yPos = snakePath[snakePiece.segment].yPos
 		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
 			// Tail
-			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
+			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
 		} else {
 			// Other pieces
-			drawPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "circle")
+			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "circle")
 		}
+	}
+
+	// Draw noms
+	if GameStarted == true {
+		doNoms(g, screen)
 	}
 
 	// Update clock speed count
