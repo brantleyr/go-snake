@@ -74,7 +74,7 @@ var (
 	ebImage        *ebiten.Image
 	goImage        *ebiten.Image
 	snakeLogo      *ebiten.Image
-	globBg	       *ebiten.Image
+	globBg         *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -93,8 +93,8 @@ var (
 	currentNom     pathPair
 	clockSpeed     = 20
 	currScore      = 0
-	globBgRot     = 0.75
-	zoomingBg	   = true
+	globBgRot      = 0.75
+	zoomingBg      = true
 	introOpacity   = 0.0
 	fadingOutIntro = false
 	timeElapsed    = 0
@@ -384,24 +384,21 @@ func drawTitle(screen *ebiten.Image) {
 	// Logo and text on top
 	snake := &ebiten.DrawImageOptions{}
 	snake.GeoM.Scale(.50, .50)
-	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.203125), float64(ScreenHeight)*0.06125)
+	snake.GeoM.Translate(float64((ScreenWidth/2))-(float64(ScreenWidth)*0.17), float64(ScreenHeight)*0.06125)
 	screen.DrawImage(snakeLogo, snake)
 
 	// Handle Menu
 	if menuItem == "new_game" {
-		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+90, color.White)
-		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+170, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+190, color.White)
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+10, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
 	} else if menuItem == "exit" {
-		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)-35, (ScreenHeight/3)+90, ParseHexColor("#8c8c8c"))
-		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-105, (ScreenHeight/3)+170, color.White)
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)+10, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-60, (ScreenHeight/3)+270, color.White)
 	}
-
 }
 
 func doTitle(g *Game, screen *ebiten.Image) {
-
 	// TODO: Add some sort of way to detect the center of the screen
-	// TODO: Add some sort of BG overlay so font is more easily readable
 	drawTitle(screen)
 
 }
@@ -514,9 +511,9 @@ func showScore(screen *ebiten.Image) {
 
 	diam := (float64(gridCellWidth/3) + float64(gridCellHeight/3))
 	radius := diam / 2
-	ebitenutil.DrawCircle(screen, float64(ScreenWidth/2)-diam, borderTop/2, radius, ParseHexColor(nomColor))
+	ebitenutil.DrawCircle(screen, float64(ScreenWidth/2)-diam+80, (borderTop/2)-.5, radius, ParseHexColor(nomColor))
 
-	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius), (borderTop/2)+(int(radius)/2), color.White)
+	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+65, (borderTop/2)+(int(radius)/2)+2, color.White)
 
 }
 
@@ -626,7 +623,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 	}
 
-	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth / 5), (int(math.Round(borderTop / 1.5))), color.White)
+	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth/3)-40, (int(math.Round(borderTop / 1.5))), color.White)
 	// Show Game Over
 	if GameOver {
 		text.Draw(screen, "Womp womp. Game over.\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight / 2), color.White)
