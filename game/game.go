@@ -604,7 +604,7 @@ func doNoms(g *Game, screen *ebiten.Image) {
 
 		// They just ate one, they potentially speed up!
 		if currScore%10 == 0 {
-			clockSpeed -= 1
+			clockSpeed -= 2
 		}
 		if clockSpeed <= 5 {
 			clockSpeed = 5 // set a base so the game doesnt get ridiculously fast
