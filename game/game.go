@@ -308,18 +308,22 @@ func (g *Game) Update() error {
 		if GameStarted && !GameOver {
 			if !GamePaused {
 				if snakePlayer.direction != "up" && snakePlayer.direction != "down" {
-					if inpututil.IsKeyJustPressed(ebiten.KeyUp) {
+					if inpututil.IsKeyJustPressed(ebiten.KeyUp) ||
+						inpututil.IsKeyJustPressed(ebiten.KeyW) {
 						snakePlayer.direction = "up"
 					}
-					if inpututil.IsKeyJustPressed(ebiten.KeyDown) {
+					if inpututil.IsKeyJustPressed(ebiten.KeyDown) ||
+						inpututil.IsKeyJustPressed(ebiten.KeyS) {
 						snakePlayer.direction = "down"
 					}
 				}
 				if snakePlayer.direction != "left" && snakePlayer.direction != "right" {
-					if inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
+					if inpututil.IsKeyJustPressed(ebiten.KeyLeft) ||
+						inpututil.IsKeyJustPressed(ebiten.KeyA) {
 						snakePlayer.direction = "left"
 					}
-					if inpututil.IsKeyJustPressed(ebiten.KeyRight) {
+					if inpututil.IsKeyJustPressed(ebiten.KeyRight) ||
+						inpututil.IsKeyJustPressed(ebiten.KeyD) {
 						snakePlayer.direction = "right"
 					}
 				}
@@ -708,7 +712,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 	} else if !GameStarted && !GameOver {
 		// Do not update snake
 		// Show start text
-		text.Draw(screen, "Arrow keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-30, (ScreenHeight/3)+130, color.White)
+		text.Draw(screen, "Arrow keys or WASD keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-70, (ScreenHeight/3)+130, color.White)
 	}
 
 	// Draw head
