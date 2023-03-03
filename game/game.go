@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	_ "image/png"
 	"log"
@@ -21,32 +22,36 @@ import (
 )
 
 const (
-	DEBUG_MODE            = true
-	dpi                   = 72
-	baseFontSize          = 36
-	titleFontSize         = 72
-	scoreFontSize         = 24
-	timerFontSize         = 24
-	GameTitle             = "Go Snake"
-	startGameText         = "Use arrow keys to guide Snake.\n    Press Enter to start."
-	drNickImageSrc        = "images/dr-nick.png"
-	schImageSrc           = "images/schneider.png"
-	rhImageSrc            = "images/red-hat.png"
-	ebImageSrc            = "images/ebitengine.png"
-	goImageSrc            = "images/golang.png"
-	snakeLogoImageSrc     = "images/snake-logo.png"
-	globBgImageSrc        = "images/green-bg.png"
-	appleImageSrc         = "images/apple.png"
-	gridHeight            = 20
-	gridWidth             = 25
-	gridSolidColor        = "#002200"
-	pieceColor            = "#00ff00"
-	nomColor              = "#ff0000"
-	backgroundBorderColor = "#004400"
-	borderTop             = 50
-	borderBottom          = 10
-	borderLeft            = 10
-	borderRight           = 10
+	DEBUG_MODE        = true
+	dpi               = 72
+	baseFontSize      = 36
+	titleFontSize     = 72
+	scoreFontSize     = 24
+	timerFontSize     = 24
+	GameTitle         = "Go Snake"
+	startGameText     = "Use arrow keys to guide Snake.\n    Press Enter to start."
+	drNickImageSrc    = "images/dr-nick.png"
+	schImageSrc       = "images/schneider.png"
+	rhImageSrc        = "images/red-hat.png"
+	ebImageSrc        = "images/ebitengine.png"
+	goImageSrc        = "images/golang.png"
+	snakeLogoImageSrc = "images/snake-logo.png"
+	globBgImageSrc    = "images/green-bg.png"
+	appleImageSrc     = "images/apple.png"
+	greenGridImageSrc = "images/green-grid.png"
+	gridHeight        = 20
+	gridWidth         = 25
+	gridSolidColor    = "#002200"
+	gridAltColor      = "#000000"
+	gridCellOpacity   = 0xaf
+	gridBorderColor   = "#005500"
+	gridBorderSize    = 3
+	pieceColor        = "#00ff00"
+	nomColor          = "#ff0000"
+	borderTop         = 50
+	borderBottom      = 10
+	borderLeft        = 10
+	borderRight       = 10
 )
 
 type pathPair struct {
@@ -76,6 +81,7 @@ var (
 	snakeLogo      *ebiten.Image
 	globBg         *ebiten.Image
 	apple          *ebiten.Image
+	greenGrid      *ebiten.Image
 	baseFont       font.Face
 	titleFont      font.Face
 	scoreFont      font.Face
@@ -103,6 +109,8 @@ var (
 	timerTicker    = time.NewTicker(1 * time.Second)
 	appleScale     = .1
 	zoomingApple   = true
+	emptyImage     = ebiten.NewImage(3, 3)
+	emptySubImage  = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 )
 
 func setupInitialSnake() {
@@ -123,6 +131,10 @@ func setupInitialSnake() {
 
 func init() {
 	var err error
+
+	// Fill the subimage
+	// Used for DrawLine
+	emptyImage.Fill(color.White)
 
 	// Load intro images
 	drNick, _, err = ebitenutil.NewImageFromFile(drNickImageSrc)
@@ -158,8 +170,14 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// Load global bg
+	// Load apple image
 	apple, _, err = ebitenutil.NewImageFromFile(appleImageSrc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Load green grid tile
+	greenGrid, _, err = ebitenutil.NewImageFromFile(greenGridImageSrc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -318,6 +336,21 @@ func ParseHexColor(s string) (c color.RGBA) {
 	return
 }
 
+func ParseHexColorAlpha(s string, a uint8) (c color.RGBA) {
+	c.A = a
+	switch len(s) {
+	case 7:
+		fmt.Sscanf(s, "#%02x%02x%02x", &c.R, &c.G, &c.B)
+	case 4:
+		fmt.Sscanf(s, "#%1x%1x%1x", &c.R, &c.G, &c.B)
+		// Double the hex digits:
+		c.R *= 17
+		c.G *= 17
+		c.B *= 17
+	}
+	return
+}
+
 func doIntro(g *Game, screen *ebiten.Image) {
 
 	// Show images
@@ -417,22 +450,38 @@ func doTitle(g *Game, screen *ebiten.Image) {
 
 }
 
-func getGridColor(ix int, iy int) color.Color {
+func getGridCellColor(ix int, iy int) color.Color {
+
 	var theColor color.Color
+
 	if ix%2 == 0 {
 		if iy%2 == 0 {
-			theColor = ParseHexColor(gridSolidColor)
+			theColor = ParseHexColorAlpha(gridSolidColor, gridCellOpacity)
 		} else {
-			theColor = color.Black
+			theColor = ParseHexColorAlpha(gridAltColor, gridCellOpacity)
 		}
 	} else {
 		if iy%2 == 0 {
-			theColor = color.Black
+			theColor = ParseHexColorAlpha(gridAltColor, gridCellOpacity)
 		} else {
-			theColor = ParseHexColor(gridSolidColor)
+			theColor = ParseHexColorAlpha(gridSolidColor, gridCellOpacity)
 		}
 	}
+
 	return theColor
+}
+
+func DrawLine(dst *ebiten.Image, x1, y1, x2, y2, width float64, clr color.Color) {
+	length := math.Hypot(x2-x1, y2-y1)
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(length, width)
+	op.GeoM.Rotate(math.Atan2(y2-y1, x2-x1))
+	op.GeoM.Translate(x1, y1)
+	op.ColorM.ScaleWithColor(clr)
+	// Filter must be 'nearest' filter (default).
+	// Linear filtering would make edges blurred.
+	dst.DrawImage(emptySubImage, op)
 }
 
 func buildGrid(screen *ebiten.Image) {
@@ -441,7 +490,14 @@ func buildGrid(screen *ebiten.Image) {
 	drawBg(screen)
 
 	// Draw Grid Border
-	ebitenutil.DrawRect(screen, float64(borderLeft-2), float64(borderTop-2), float64(ScreenWidth-borderRight-borderLeft), float64(ScreenHeight-borderBottom-borderTop-2), ParseHexColor("#009900"))
+	// Top
+	DrawLine(screen, float64(borderLeft-gridBorderSize), float64(borderTop-gridBorderSize), float64(ScreenWidth-borderRight), float64(borderTop-gridBorderSize), gridBorderSize, ParseHexColor(gridBorderColor))
+	// Bottom
+	DrawLine(screen, float64(borderLeft-gridBorderSize), float64(ScreenHeight-borderBottom)-(float64(gridBorderSize)*3), float64(ScreenWidth-borderRight), float64(ScreenHeight-borderBottom)-(float64(gridBorderSize)*3), gridBorderSize, ParseHexColor(gridBorderColor))
+	// Left
+	DrawLine(screen, float64(borderLeft), float64(borderTop), float64(borderLeft), float64(ScreenHeight-borderBottom)-(float64(gridBorderSize)*2.5), gridBorderSize, ParseHexColor(gridBorderColor))
+	// Right
+	DrawLine(screen, float64(ScreenWidth-borderRight), float64(borderTop), float64(ScreenWidth-borderRight), float64(ScreenHeight-borderBottom)-(float64(gridBorderSize)*2.5), gridBorderSize, ParseHexColor(gridBorderColor))
 
 	// Calculate Grid width using borders
 	gridCellWidth = (ScreenWidth - borderLeft - borderRight) / gridWidth
@@ -450,7 +506,7 @@ func buildGrid(screen *ebiten.Image) {
 	// Draw grid
 	for ix := 0; ix < gridWidth; ix++ {
 		for iy := 0; iy < gridHeight; iy++ {
-			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), getGridColor(ix, iy))
+			ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), getGridCellColor(ix, iy))
 		}
 	}
 
