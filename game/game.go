@@ -101,6 +101,8 @@ var (
 	timeElapsed    = 0
 	timerDone      = make(chan bool)
 	timerTicker    = time.NewTicker(1 * time.Second)
+	appleScale     = .1
+	zoomingApple   = true
 )
 
 func setupInitialSnake() {
@@ -470,10 +472,8 @@ func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, s
 		//TODO: For tail, for now its a smaller cicle
 	}
 	if shapeType == "apple" {
-		// Logo and text on top
-		// radius := float64((float64(gridCellWidth/5) + float64(gridCellHeight/5)) / 2)
 		a := &ebiten.DrawImageOptions{}
-		a.GeoM.Scale(.1, .1)
+		a.GeoM.Scale(appleScale, appleScale)
 		a.GeoM.Translate(float64(ix*gridCellWidth)+5+float64(borderLeft), float64(iy*gridCellHeight)+2+float64(borderTop))
 		screen.DrawImage(apple, a)
 	}
@@ -534,7 +534,7 @@ func showScore(screen *ebiten.Image) {
 
 	// Draw the apple
 	a := &ebiten.DrawImageOptions{}
-	a.GeoM.Scale(.1, .1)
+	a.GeoM.Scale(appleScale, appleScale)
 	a.GeoM.Translate(float64(ScreenWidth/2)+105+float64(borderLeft), float64(borderTop/2)-18)
 	screen.DrawImage(apple, a)
 
@@ -556,9 +556,29 @@ func doTimer() {
 	}()
 }
 
+func doAppleScale() {
+	if GameStarted && !GamePaused {
+		if zoomingApple {
+			appleScale += .0005
+		} else {
+			appleScale -= .0005
+		}
+
+		if appleScale >= .1 {
+			zoomingApple = false
+		}
+		if appleScale <= .09 {
+			zoomingApple = true
+		}
+	}
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
+
+	// FX for apple
+	doAppleScale()
 
 	// Show score count
 	showScore(screen)
