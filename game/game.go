@@ -5,6 +5,8 @@ import (
 	"image"
 	"image/color"
 	_ "image/png"
+	"io"
+	"io/fs"
 	"log"
 	"math"
 	"math/rand"
@@ -16,6 +18,8 @@ import (
 	"golang.org/x/image/font/opentype"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -52,6 +56,7 @@ const (
 	borderBottom      = 10
 	borderLeft        = 10
 	borderRight       = 10
+	sampleRate        = 22050
 )
 
 type pathPair struct {
@@ -72,45 +77,49 @@ type snake struct {
 }
 
 var (
-	snakePlayer    snake
-	drNick         *ebiten.Image
-	schImage       *ebiten.Image
-	rhImage        *ebiten.Image
-	ebImage        *ebiten.Image
-	goImage        *ebiten.Image
-	snakeLogo      *ebiten.Image
-	globBg         *ebiten.Image
-	apple          *ebiten.Image
-	greenGrid      *ebiten.Image
-	baseFont       font.Face
-	titleFont      font.Face
-	scoreFont      font.Face
-	timerFont      font.Face
-	GameStarted    = false
-	GamePaused     = false
-	GameOver       = false
-	GameState      = "title" // intro, title, game, exit
-	menuItem       string
-	ScreenWidth    = 1024
-	ScreenHeight   = 768
-	gridCellHeight int
-	gridCellWidth  int
-	snakePath      []pathPair
-	nomActive      = false
-	currentNom     pathPair
-	clockSpeed     = 20
-	currScore      = 0
-	globBgRot      = 0.75
-	zoomingBg      = true
-	introOpacity   = 0.0
-	fadingOutIntro = false
-	timeElapsed    = 0
-	timerDone      = make(chan bool)
-	timerTicker    = time.NewTicker(1 * time.Second)
-	appleScale     = .1
-	zoomingApple   = true
-	emptyImage     = ebiten.NewImage(3, 3)
-	emptySubImage  = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+	snakePlayer        snake
+	drNick             *ebiten.Image
+	schImage           *ebiten.Image
+	rhImage            *ebiten.Image
+	ebImage            *ebiten.Image
+	goImage            *ebiten.Image
+	snakeLogo          *ebiten.Image
+	globBg             *ebiten.Image
+	apple              *ebiten.Image
+	greenGrid          *ebiten.Image
+	baseFont           font.Face
+	titleFont          font.Face
+	scoreFont          font.Face
+	timerFont          font.Face
+	GameStarted        = false
+	GamePaused         = false
+	GameOver           = false
+	GameState          = "title" // intro, title, game, exit
+	menuItem           string
+	ScreenWidth        = 1024
+	ScreenHeight       = 768
+	gridCellHeight     int
+	gridCellWidth      int
+	snakePath          []pathPair
+	nomActive          = false
+	currentNom         pathPair
+	clockSpeed         = 20
+	currScore          = 0
+	globBgRot          = 0.75
+	zoomingBg          = true
+	introOpacity       = 0.0
+	fadingOutIntro     = false
+	timeElapsed        = 0
+	timerDone          = make(chan bool)
+	timerTicker        = time.NewTicker(1 * time.Second)
+	appleScale         = .1
+	zoomingApple       = true
+	emptyImage         = ebiten.NewImage(3, 3)
+	emptySubImage      = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+	gameOverSnd        *audio.Player
+	gameOverFile       fs.File
+	GameJustEnded      = false
+	GameOverSndPlaying = true
 )
 
 func setupInitialSnake() {
@@ -127,6 +136,26 @@ func setupInitialSnake() {
 		{0, 1},
 		{0, 0},
 	}
+}
+
+func openFile(path string) fs.File {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
+}
+
+func decodeMP3(ctx *audio.Context, src io.ReadSeeker) *audio.Player {
+	s, err := mp3.Decode(ctx, src)
+	if err != nil {
+		log.Fatal(err)
+	}
+	player, err := audio.NewPlayer(ctx, s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return player
 }
 
 func init() {
@@ -228,6 +257,11 @@ func init() {
 		log.Fatal(err)
 	}
 	menuItem = "new_game"
+
+	// Initialize sounds
+	ctx := audio.NewContext(sampleRate)
+	gameOverFile = openFile("sounds/game-over.mp3")
+	gameOverSnd = decodeMP3(ctx, gameOverFile.(io.ReadSeeker))
 }
 
 type Game struct {
@@ -714,6 +748,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 			if snakePlayer.xPos == snakePathPair.xPos && snakePlayer.yPos == snakePathPair.yPos {
 				GameStarted = false
 				GameOver = true
+				GameJustEnded = true
 			}
 		}
 		// Check if the head collided with a wall
@@ -721,6 +756,7 @@ func doGame(g *Game, screen *ebiten.Image) {
 			if snakePlayer.xPos >= gridWidth || snakePlayer.xPos < 0 || snakePlayer.yPos >= gridHeight || snakePlayer.yPos < 0 {
 				GameStarted = false
 				GameOver = true
+				GameJustEnded = true
 			}
 		}
 	}
@@ -730,6 +766,16 @@ func doGame(g *Game, screen *ebiten.Image) {
 	if GameOver {
 		text.Draw(screen, "Womp womp. Game over.\n\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
 		timerTicker.Stop()
+	}
+
+	// Handle game over sound
+	if GameOver && GameJustEnded && !GameOverSndPlaying {
+		GameOverSndPlaying = true
+		gameOverSnd.Seek(0)
+		gameOverSnd.Play()
+	}
+	if GameOver && GameOverSndPlaying {
+		gameOverSnd.Play()
 	}
 
 }
