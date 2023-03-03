@@ -601,6 +601,14 @@ func doNoms(g *Game, screen *ebiten.Image) {
 		nomActive = true
 		currentNom = pathPair{randX, randY}
 		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "apple")
+
+		// They just ate one, they potentially speed up!
+		if currScore%10 == 0 {
+			clockSpeed -= 1
+		}
+		if clockSpeed <= 5 {
+			clockSpeed = 5 // set a base so the game doesnt get ridiculously fast
+		}
 	}
 
 	// If theres already a nom, check to see if it intersects with the snake head or draw it
