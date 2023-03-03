@@ -343,6 +343,7 @@ func (g *Game) Update() error {
 				GameStarted = true
 				GameOver = false
 				GameOverSndPlaying = false
+				GameJustEnded = false
 				currScore = 0
 				timeElapsed = 1 // it starts slower than the first timer for some reason
 				timerTicker.Reset(1 * time.Second)
