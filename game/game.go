@@ -342,9 +342,11 @@ func (g *Game) Update() error {
 			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				GameStarted = true
 				GameOver = false
+				GameOverSndPlaying = false
 				currScore = 0
 				timeElapsed = 1 // it starts slower than the first timer for some reason
 				timerTicker.Reset(1 * time.Second)
+
 				setupInitialSnake()
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 				GameState = "exit"
