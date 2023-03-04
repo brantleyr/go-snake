@@ -50,7 +50,6 @@ const (
 	gridCellOpacity   = 0xaf
 	gridBorderColor   = "#005500"
 	gridBorderSize    = 3
-	pieceColor        = "#00ff00"
 	nomColor          = "#ff0000"
 	borderTop         = 50
 	borderBottom      = 10
@@ -104,6 +103,7 @@ var (
 	nomActive          = false
 	currentNom         pathPair
 	clockSpeed         = 20
+	clockSpeedHuman    = 1
 	currScore          = 0
 	globBgRot          = 0.75
 	zoomingBg          = true
@@ -120,6 +120,8 @@ var (
 	gameOverFile       fs.File
 	GameJustEnded      = false
 	GameOverSndPlaying = true
+	// scoreBoard         string  TODO: USE THIS
+	pieceColor = "#00ff00"
 )
 
 func setupInitialSnake() {
@@ -256,6 +258,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	menuItem = "new_game"
 
 	// Initialize sounds
@@ -280,31 +283,38 @@ func (g *Game) Update() error {
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			if menuItem == "new_game" {
 				GameState = "game"
+			} else if menuItem == "new_game_hard" {
+				GameState = "game_hard"
 			} else if menuItem == "exit" {
 				// Loop to the down
 				GameState = "exit"
 			}
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) ||
+			inpututil.IsKeyJustPressed(ebiten.KeyS) {
 			if menuItem == "new_game" {
 				// They just moved down
+				menuItem = "new_game_hard"
+			} else if menuItem == "new_game_hard" {
 				menuItem = "exit"
 			} else if menuItem == "exit" {
 				// Loop to the top
 				menuItem = "new_game"
 			}
-		} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+		} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) ||
+			inpututil.IsKeyJustPressed(ebiten.KeyW) {
 			if menuItem == "new_game" {
 				// They just moved up
 				menuItem = "exit"
-			} else if menuItem == "exit" {
-				// Loop to the bottom
+			} else if menuItem == "new_game_hard" {
 				menuItem = "new_game"
+			} else if menuItem == "exit" {
+				menuItem = "new_game_hard"
 			}
 		}
 
 		// Handle "game" game state key events
-	} else if GameState == "game" {
+	} else if GameState == "game" || GameState == "game_hard" {
 		if GameStarted && !GameOver {
 			if !GamePaused {
 				if snakePlayer.direction != "up" && snakePlayer.direction != "down" {
@@ -349,12 +359,22 @@ func (g *Game) Update() error {
 				GameOverSndPlaying = false
 				GameJustEnded = false
 				currScore = 0
+				clockSpeed = 20
+				clockSpeedHuman = 1
+
 				timeElapsed = 1 // it starts slower than the first timer for some reason
 				timerTicker.Reset(1 * time.Second)
 
 				setupInitialSnake()
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 				GameState = "exit"
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyM) {
+				if GameState == "game" {
+					GameState = "game_hard"
+				} else {
+					// Hard -> Normal
+					GameState = "game"
+				}
 			}
 		}
 	}
@@ -441,6 +461,9 @@ func doIntro(g *Game, screen *ebiten.Image) {
 		introOpacity += .01
 		if introOpacity >= 1 {
 			introOpacity = 1
+
+			time.Sleep(1 * time.Second)
+			GameState = "title"
 		}
 	}
 
@@ -478,10 +501,16 @@ func drawTitle(screen *ebiten.Image) {
 	// Handle Menu
 	if menuItem == "new_game" {
 		text.Draw(screen, "> New Game", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+190, color.White)
-		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "New Game (Hard)", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+350, ParseHexColor("#8c8c8c"))
+	} else if menuItem == "new_game_hard" {
+		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> New Game (Hard)", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+270, color.White)
+		text.Draw(screen, "Exit", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+350, ParseHexColor("#8c8c8c"))
 	} else if menuItem == "exit" {
 		text.Draw(screen, "New Game", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+190, ParseHexColor("#8c8c8c"))
-		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+270, color.White)
+		text.Draw(screen, "New Game (Hard)", titleFont, (ScreenWidth/3)+20, (ScreenHeight/3)+270, ParseHexColor("#8c8c8c"))
+		text.Draw(screen, "> Exit", titleFont, (ScreenWidth/3)-30, (ScreenHeight/3)+350, color.White)
 	}
 }
 
@@ -603,11 +632,31 @@ func doNoms(g *Game, screen *ebiten.Image) {
 		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "apple")
 
 		// They just ate one, they potentially speed up!
-		if currScore%10 == 0 {
-			clockSpeed -= 2
-		}
-		if clockSpeed <= 5 {
-			clockSpeed = 5 // set a base so the game doesnt get ridiculously fast
+		if currScore >= 10 {
+			if currScore%10 == 0 {
+				if GameState == "game_hard" {
+					// Give the user a couple seconds to react after eating fruit
+					go func() {
+						time.Sleep(2 * time.Second)
+						clockSpeed -= 4
+						clockSpeedHuman += 2
+					}()
+				} else {
+					// Give the user a couple seconds to react after eating fruit
+					go func() {
+						time.Sleep(2 * time.Second)
+						clockSpeed -= 2
+						clockSpeedHuman += 1
+					}()
+				}
+			}
+			if clockSpeed <= 5 {
+				if GameState == "game_hard" {
+					clockSpeed = 4
+				} else {
+					clockSpeed = 5 // set a base so the game doesnt get ridiculously fast
+				}
+			}
 		}
 	}
 
@@ -619,9 +668,6 @@ func doNoms(g *Game, screen *ebiten.Image) {
 			// Add new snake piece
 			newSnakeBodyPiece := snakeBody{snakePlayer.xPos, snakePlayer.yPos, len(snakePlayer.snakeBody)}
 			snakePlayer.snakeBody = append([]snakeBody{newSnakeBodyPiece}, snakePlayer.snakeBody...)
-
-			// TODO: Make clock speed faster when you acquire more noms
-			// clockSpeed -= someNumber and floor() it so it only gets so fast
 
 			// Increment score
 			currScore += 1
@@ -647,6 +693,10 @@ func showScore(screen *ebiten.Image) {
 	text.Draw(screen, strconv.Itoa(currScore), scoreFont, (ScreenWidth/2)+int(radius)+140, (borderTop/2)+(int(radius)/2)+3, color.White)
 
 }
+
+// TODO: Make this do a thing
+// func doScoreboard() {
+// }
 
 func doTimer() {
 	go func() {
@@ -688,6 +738,12 @@ func doGame(g *Game, screen *ebiten.Image) {
 	// Show score count
 	showScore(screen)
 
+	// Hard mode
+	if GameState == "game_hard" {
+		text.Draw(screen, "Hard Mode", timerFont, (ScreenWidth/3)-330, (int(math.Round(borderTop / 1.5))), ParseHexColor("#749e35"))
+	} else {
+		text.Draw(screen, "Normal Mode", timerFont, (ScreenWidth/3)-330, (int(math.Round(borderTop / 1.5))), ParseHexColor("#749e35"))
+	}
 	// Handle game started vs paused
 	if GameStarted && !GamePaused && !GameOver {
 		var moveCounter int
@@ -721,6 +777,16 @@ func doGame(g *Game, screen *ebiten.Image) {
 		// Do not update snake
 		// Show start text
 		text.Draw(screen, "Arrow keys or WASD keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-70, (ScreenHeight/3)+130, color.White)
+	}
+
+	// Change pieces depending on current speed
+	switch speed := clockSpeedHuman; {
+	case speed >= 7:
+		pieceColor = "#ff3c3c" // RED
+	case speed >= 3:
+		pieceColor = "#ff9300" // ORANGE
+	default:
+		pieceColor = "#00ff00" // GREEN
 	}
 
 	// Draw head
@@ -777,9 +843,15 @@ func doGame(g *Game, screen *ebiten.Image) {
 	}
 
 	text.Draw(screen, "Seconds Survived: "+strconv.Itoa(timeElapsed), timerFont, (ScreenWidth/3)-40, (int(math.Round(borderTop / 1.5))), color.White)
+	text.Draw(screen, "Current Speed: "+strconv.Itoa(clockSpeedHuman), timerFont, (ScreenWidth/3)+480, (int(math.Round(borderTop / 1.5))), color.White)
+
 	// Show Game Over
 	if GameOver {
-		text.Draw(screen, "Womp womp. Game over.\n\nPress Enter for New Game\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
+		// TODO: One day we use JSON to get a scoreboard going, or a database
+		// doScoreboard()
+		// text.Draw(screen, scoreBoard, baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
+
+		text.Draw(screen, "Press Enter for New Game\nM to change mode\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
 		timerTicker.Stop()
 	}
 
@@ -807,6 +879,10 @@ func handleGameState(g *Game, screen *ebiten.Image) {
 	}
 
 	if GameState == "game" {
+		doGame(g, screen)
+	}
+
+	if GameState == "game_hard" {
 		doGame(g, screen)
 	}
 
