@@ -851,7 +851,9 @@ func doGame(g *Game, screen *ebiten.Image) {
 		// doScoreboard()
 		// text.Draw(screen, scoreBoard, baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
 
-		text.Draw(screen, "Press Enter for New Game\nM to change mode\nor Escape to quit", baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
+		text.Draw(screen, "Womp womp. Game over.\n\nEnter = New Game\nM = Change mode\nEscape = Quit",
+			baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White,
+		)
 		timerTicker.Stop()
 	}
 
