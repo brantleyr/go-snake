@@ -59,7 +59,8 @@ const (
 )
 
 type pathPair struct {
-	xPos, yPos int
+	xPos, yPos  int
+	orientation string
 }
 
 type snakeBody struct {
@@ -76,52 +77,83 @@ type snake struct {
 }
 
 var (
-	snakePlayer        snake
-	drNick             *ebiten.Image
-	schImage           *ebiten.Image
-	rhImage            *ebiten.Image
-	ebImage            *ebiten.Image
-	goImage            *ebiten.Image
-	snakeLogo          *ebiten.Image
-	globBg             *ebiten.Image
-	apple              *ebiten.Image
-	greenGrid          *ebiten.Image
-	baseFont           font.Face
-	titleFont          font.Face
-	scoreFont          font.Face
-	timerFont          font.Face
-	GameStarted        = false
-	GamePaused         = false
-	GameOver           = false
-	GameState          = "title" // intro, title, game, exit
-	menuItem           string
-	ScreenWidth        = 1024
-	ScreenHeight       = 768
-	gridCellHeight     int
-	gridCellWidth      int
-	snakePath          []pathPair
-	nomActive          = false
-	currentNom         pathPair
-	clockSpeed         = 20
-	clockSpeedHuman    = 1
-	currScore          = 0
-	globBgRot          = 0.75
-	zoomingBg          = true
-	introOpacity       = 0.0
-	fadingOutIntro     = false
-	timeElapsed        = 0
-	timerDone          = make(chan bool)
-	timerTicker        = time.NewTicker(1 * time.Second)
-	appleScale         = .1
-	zoomingApple       = true
-	emptyImage         = ebiten.NewImage(3, 3)
-	emptySubImage      = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
-	gameOverSnd        *audio.Player
-	gameOverFile       fs.File
-	GameJustEnded      = false
-	GameOverSndPlaying = true
+	snakePlayer               snake
+	drNick                    *ebiten.Image
+	schImage                  *ebiten.Image
+	rhImage                   *ebiten.Image
+	ebImage                   *ebiten.Image
+	goImage                   *ebiten.Image
+	snakeLogo                 *ebiten.Image
+	globBg                    *ebiten.Image
+	apple                     *ebiten.Image
+	greenGrid                 *ebiten.Image
+	snakeHeadUpGreen          *ebiten.Image
+	snakeHeadDownGreen        *ebiten.Image
+	snakeHeadLeftGreen        *ebiten.Image
+	snakeHeadRightGreen       *ebiten.Image
+	snakeBodyVerticalGreen    *ebiten.Image
+	snakeBodyHorizontalGreen  *ebiten.Image
+	snakeTailHorizontalGreen  *ebiten.Image
+	snakeTailVerticalGreen    *ebiten.Image
+	snakeHeadUpOrange         *ebiten.Image
+	snakeHeadDownOrange       *ebiten.Image
+	snakeHeadLeftOrange       *ebiten.Image
+	snakeHeadRightOrange      *ebiten.Image
+	snakeBodyVerticalOrange   *ebiten.Image
+	snakeBodyHorizontalOrange *ebiten.Image
+	snakeTailHorizontalOrange *ebiten.Image
+	snakeTailVerticalOrange   *ebiten.Image
+	snakeHeadUpRed            *ebiten.Image
+	snakeHeadDownRed          *ebiten.Image
+	snakeHeadLeftRed          *ebiten.Image
+	snakeHeadRightRed         *ebiten.Image
+	snakeBodyVerticalRed      *ebiten.Image
+	snakeBodyHorizontalRed    *ebiten.Image
+	snakeTailHorizontalRed    *ebiten.Image
+	snakeTailVerticalRed      *ebiten.Image
+	snakeDead                 *ebiten.Image
+	baseFont                  font.Face
+	titleFont                 font.Face
+	scoreFont                 font.Face
+	timerFont                 font.Face
+	GameStarted               = false
+	GamePaused                = false
+	GameOver                  = false
+	GameState                 = "title" // intro, title, game, exit
+	menuItem                  string
+	ScreenWidth               = 1024
+	ScreenHeight              = 768
+	gridCellHeight            int
+	gridCellWidth             int
+	snakePath                 []pathPair
+	nomActive                 = false
+	currentNom                pathPair
+	clockSpeed                = 20
+	clockSpeedHuman           = 1
+	currScore                 = 0
+	globBgRot                 = 0.75
+	zoomingBg                 = true
+	introOpacity              = 0.0
+	fadingOutIntro            = false
+	timeElapsed               = 0
+	timerDone                 = make(chan bool)
+	timerTicker               = time.NewTicker(1 * time.Second)
+	appleScale                = .1
+	zoomingApple              = true
+	emptyImage                = ebiten.NewImage(3, 3)
+	emptySubImage             = emptyImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+	gameOverSnd               *audio.Player
+	gameOverFile              fs.File
+	GameJustEnded             = false
+	GameOverSndPlaying        = true
 	// scoreBoard         string  TODO: USE THIS
-	pieceColor = "#00ff00"
+	pieceColor          = "#00ff00"
+	xBodyFactor         = .5
+	yBodyFactor         = .5
+	zoomingBody         = true
+	manualColorOverride = false
+	manualColor         = "green"
+	muted               = true
 )
 
 func setupInitialSnake() {
@@ -134,9 +166,9 @@ func setupInitialSnake() {
 
 	// Initial Path
 	snakePath = []pathPair{
-		{0, 2},
-		{0, 1},
-		{0, 0},
+		{0, 2, "vertical"},
+		{0, 1, "vertical"},
+		{0, 0, "vertical"},
 	}
 }
 
@@ -213,6 +245,115 @@ func init() {
 		log.Fatal(err)
 	}
 
+	// Load snake images
+	// Green
+	snakeHeadUpGreen, _, err = ebitenutil.NewImageFromFile("images/snake-head-up-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadDownGreen, _, err = ebitenutil.NewImageFromFile("images/snake-head-down-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadLeftGreen, _, err = ebitenutil.NewImageFromFile("images/snake-head-left-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadRightGreen, _, err = ebitenutil.NewImageFromFile("images/snake-head-right-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyVerticalGreen, _, err = ebitenutil.NewImageFromFile("images/snake-body-vertical-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyHorizontalGreen, _, err = ebitenutil.NewImageFromFile("images/snake-body-horizontal-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailHorizontalGreen, _, err = ebitenutil.NewImageFromFile("images/snake-tail-horizontal-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailVerticalGreen, _, err = ebitenutil.NewImageFromFile("images/snake-tail-vertical-green.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//Orange
+	snakeHeadUpOrange, _, err = ebitenutil.NewImageFromFile("images/snake-head-up-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadDownOrange, _, err = ebitenutil.NewImageFromFile("images/snake-head-down-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadLeftOrange, _, err = ebitenutil.NewImageFromFile("images/snake-head-left-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadRightOrange, _, err = ebitenutil.NewImageFromFile("images/snake-head-right-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyVerticalOrange, _, err = ebitenutil.NewImageFromFile("images/snake-body-vertical-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyHorizontalOrange, _, err = ebitenutil.NewImageFromFile("images/snake-body-horizontal-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailHorizontalOrange, _, err = ebitenutil.NewImageFromFile("images/snake-tail-horizontal-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailVerticalOrange, _, err = ebitenutil.NewImageFromFile("images/snake-tail-vertical-orange.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//Red
+	snakeHeadUpRed, _, err = ebitenutil.NewImageFromFile("images/snake-head-up-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadDownRed, _, err = ebitenutil.NewImageFromFile("images/snake-head-down-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadLeftRed, _, err = ebitenutil.NewImageFromFile("images/snake-head-left-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeHeadRightRed, _, err = ebitenutil.NewImageFromFile("images/snake-head-right-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyVerticalRed, _, err = ebitenutil.NewImageFromFile("images/snake-body-vertical-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeBodyHorizontalRed, _, err = ebitenutil.NewImageFromFile("images/snake-body-horizontal-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailHorizontalRed, _, err = ebitenutil.NewImageFromFile("images/snake-tail-horizontal-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	snakeTailVerticalRed, _, err = ebitenutil.NewImageFromFile("images/snake-tail-vertical-red.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Dead snake - Game Over
+	snakeDead, _, err = ebitenutil.NewImageFromFile("images/snake-dead.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Make snake
 	setupInitialSnake()
 
@@ -271,6 +412,17 @@ type Game struct {
 	clockSpeedCount int
 }
 
+func doColorOverride() {
+	manualColorOverride = true
+	if manualColor == "green" {
+		manualColor = "orange"
+	} else if manualColor == "orange" {
+		manualColor = "red"
+	} else if manualColor == "red" {
+		manualColor = "green"
+	}
+}
+
 func (g *Game) Update() error {
 	// Handle "intro" game state key events
 	if GameState == "intro" {
@@ -315,6 +467,9 @@ func (g *Game) Update() error {
 
 		// Handle "game" game state key events
 	} else if GameState == "game" || GameState == "game_hard" {
+		if inpututil.IsKeyJustPressed(ebiten.KeyC) {
+			doColorOverride()
+		}
 		if GameStarted && !GameOver {
 			if !GamePaused {
 				if snakePlayer.direction != "up" && snakePlayer.direction != "down" {
@@ -582,7 +737,7 @@ func buildGrid(screen *ebiten.Image) {
 
 }
 
-func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string) {
+func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, shapeType string, segment int) {
 	if shapeType == "rect" {
 		ebitenutil.DrawRect(screen, float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop), float64(gridCellWidth), float64(gridCellHeight), theColor)
 	}
@@ -602,6 +757,225 @@ func drawGridPiece(screen *ebiten.Image, ix int, iy int, theColor color.Color, s
 		a.GeoM.Scale(appleScale, appleScale)
 		a.GeoM.Translate(float64(ix*gridCellWidth)+5+float64(borderLeft), float64(iy*gridCellHeight)+2+float64(borderTop))
 		screen.DrawImage(apple, a)
+	}
+	// Green snake head
+	if shapeType == "head-up-green" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadUpGreen, s)
+	}
+	if shapeType == "head-down-green" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadDownGreen, s)
+	}
+	if shapeType == "head-left-green" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadLeftGreen, s)
+	}
+	if shapeType == "head-right-green" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadRightGreen, s)
+	}
+	if shapeType == "snake-body-vertical-green" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeBodyVerticalGreen, s)
+	}
+	if shapeType == "snake-body-horizontal-green" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeBodyHorizontalGreen, s)
+	}
+	if shapeType == "snake-tail-horizontal-green" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeTailHorizontalGreen, s)
+	}
+	if shapeType == "snake-tail-vertical-green" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeTailVerticalGreen, s)
+	}
+	// Orange snake head
+	if shapeType == "head-up-orange" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadUpOrange, s)
+	}
+	if shapeType == "head-down-orange" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadDownOrange, s)
+	}
+	if shapeType == "head-left-orange" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadLeftOrange, s)
+	}
+	if shapeType == "head-right-orange" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadRightOrange, s)
+	}
+	if shapeType == "snake-body-vertical-orange" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeBodyVerticalOrange, s)
+	}
+	if shapeType == "snake-body-horizontal-orange" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeBodyHorizontalOrange, s)
+	}
+	if shapeType == "snake-tail-horizontal-orange" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeTailHorizontalOrange, s)
+	}
+	if shapeType == "snake-tail-vertical-orange" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeTailVerticalOrange, s)
+	}
+	// Red snake head
+	if shapeType == "head-up-red" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadUpRed, s)
+	}
+	if shapeType == "head-down-red" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.5, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadDownRed, s)
+	}
+	if shapeType == "head-left-red" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadLeftRed, s)
+	}
+	if shapeType == "head-right-red" {
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, .5)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeHeadRightRed, s)
+	}
+	if shapeType == "snake-body-vertical-red" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeBodyVerticalRed, s)
+	}
+	if shapeType == "snake-body-horizontal-red" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeBodyHorizontalRed, s)
+	}
+	if shapeType == "snake-tail-horizontal-red" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -3
+		} else {
+			segmentOffset = 3
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(.55, yBodyFactor)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft), float64(iy*gridCellHeight)+float64(borderTop)+float64(segmentOffset))
+		screen.DrawImage(snakeTailHorizontalRed, s)
+	}
+	if shapeType == "snake-tail-vertical-red" {
+		var segmentOffset int
+		if segment%2 == 0 {
+			segmentOffset = -4
+		} else {
+			segmentOffset = 4
+		}
+		s := &ebiten.DrawImageOptions{}
+		s.GeoM.Scale(xBodyFactor, .55)
+		s.GeoM.Translate(float64(ix*gridCellWidth)+float64(borderLeft)+float64(segmentOffset), float64(iy*gridCellHeight)+float64(borderTop))
+		screen.DrawImage(snakeTailVerticalRed, s)
 	}
 
 }
@@ -628,8 +1002,8 @@ func doNoms(g *Game, screen *ebiten.Image) {
 		}
 		// Set the new nom and draw it on the screen
 		nomActive = true
-		currentNom = pathPair{randX, randY}
-		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "apple")
+		currentNom = pathPair{randX, randY, ""}
+		drawGridPiece(screen, randX, randY, ParseHexColor(nomColor), "apple", 0)
 
 		// They just ate one, they potentially speed up!
 		if currScore >= 10 {
@@ -673,7 +1047,7 @@ func doNoms(g *Game, screen *ebiten.Image) {
 			currScore += 1
 
 		} else {
-			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "apple")
+			drawGridPiece(screen, currentNom.xPos, currentNom.yPos, ParseHexColor(nomColor), "apple", 0)
 		}
 	}
 }
@@ -728,12 +1102,53 @@ func doAppleScale() {
 	}
 }
 
+func doBodyFactor() {
+	if !GamePaused {
+		if zoomingBody {
+			xBodyFactor += .005
+			yBodyFactor += .005
+		} else {
+			xBodyFactor -= .005
+			yBodyFactor -= .005
+		}
+	}
+
+	if xBodyFactor >= .55 {
+		zoomingBody = false
+	}
+	if xBodyFactor <= .45 {
+		zoomingBody = true
+	}
+	if yBodyFactor >= .55 {
+		zoomingBody = false
+	}
+	if yBodyFactor <= .45 {
+		zoomingBody = true
+	}
+}
+
+func drawBlackOverlay(screen *ebiten.Image) {
+	ebitenutil.DrawRect(screen, 0, 0, float64(ScreenWidth), float64(ScreenHeight), ParseHexColorAlpha("#000000", 0x88))
+}
+
+func drawSnakeDead(screen *ebiten.Image) {
+	s := &ebiten.DrawImageOptions{}
+	s.GeoM.Scale(.5, .5)
+	s.GeoM.Translate(float64(ScreenWidth/2)-float64(100), float64(ScreenHeight/2)-float64(250))
+	screen.DrawImage(snakeDead, s)
+}
+
 func doGame(g *Game, screen *ebiten.Image) {
 	// Draw background
 	buildGrid(screen)
 
 	// FX for apple
 	doAppleScale()
+
+	// FX for body
+	if !GameOver {
+		doBodyFactor()
+	}
 
 	// Show score count
 	showScore(screen)
@@ -770,27 +1185,24 @@ func doGame(g *Game, screen *ebiten.Image) {
 		}
 	}
 
-	// Handle game started vs paused
-	if GameStarted && GamePaused {
-		text.Draw(screen, "Game Paused. Escape to resume\nor Q to quit.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
-	} else if !GameStarted && !GameOver {
-		// Do not update snake
-		// Show start text
-		text.Draw(screen, "Arrow keys or WASD keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-70, (ScreenHeight/3)+130, color.White)
-	}
-
 	// Change pieces depending on current speed
+	var pieceColorName string
+	// TODO: Make the snake piece white and overlay a rectangle on it dynamically depending on color
 	switch speed := clockSpeedHuman; {
 	case speed >= 7:
 		pieceColor = "#ff3c3c" // RED
+		pieceColorName = "red"
 	case speed >= 3:
 		pieceColor = "#ff9300" // ORANGE
+		pieceColorName = "orange"
 	default:
-		pieceColor = "#00ff00" // GREEN
+		pieceColor = "#8bc03c" // GREEN
+		pieceColorName = "green"
 	}
 
-	// Draw head
-	drawGridPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "rect")
+	if manualColorOverride {
+		pieceColorName = manualColor
+	}
 
 	// Draw pieces
 	for idx, snakePiece := range snakePlayer.snakeBody {
@@ -798,12 +1210,15 @@ func doGame(g *Game, screen *ebiten.Image) {
 		snakePlayer.snakeBody[idx].yPos = snakePath[snakePiece.segment].yPos
 		if snakePiece.segment == (len(snakePlayer.snakeBody) - 1) {
 			// Tail
-			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "smallcircle")
+			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "snake-tail-"+snakePath[snakePiece.segment].orientation+"-"+pieceColorName, snakePiece.segment)
 		} else {
 			// Other pieces
-			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "circle")
+			drawGridPiece(screen, snakePiece.xPos, snakePiece.yPos, ParseHexColor(pieceColor), "snake-body-"+snakePath[snakePiece.segment].orientation+"-"+pieceColorName, snakePiece.segment)
 		}
 	}
+
+	// Draw head
+	drawGridPiece(screen, snakePlayer.xPos, snakePlayer.yPos, ParseHexColor(pieceColor), "head-"+snakePlayer.direction+"-"+pieceColorName, 0)
 
 	// Draw noms
 	if GameStarted {
@@ -816,7 +1231,14 @@ func doGame(g *Game, screen *ebiten.Image) {
 	g.clockSpeedCount += 1
 	if g.clockSpeedCount > clockSpeed {
 		if GameStarted && !GamePaused {
-			snakePath = append([]pathPair{{snakePlayer.xPos, snakePlayer.yPos}}, snakePath[0:len(snakePlayer.snakeBody)]...)
+			var orientation string
+			if snakePlayer.direction == "up" || snakePlayer.direction == "down" {
+				orientation = "vertical"
+			}
+			if snakePlayer.direction == "left" || snakePlayer.direction == "right" {
+				orientation = "horizontal"
+			}
+			snakePath = append([]pathPair{{snakePlayer.xPos, snakePlayer.yPos, orientation}}, snakePath[0:len(snakePlayer.snakeBody)]...)
 		}
 		g.clockSpeedCount = 0
 	}
@@ -850,21 +1272,37 @@ func doGame(g *Game, screen *ebiten.Image) {
 		// TODO: One day we use JSON to get a scoreboard going, or a database
 		// doScoreboard()
 		// text.Draw(screen, scoreBoard, baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White)
-
+		drawBlackOverlay(screen)
+		drawSnakeDead(screen)
 		text.Draw(screen, "Womp womp. Game over.\n\nEnter = New Game\nM = Change mode\nEscape = Quit",
 			baseFont, (ScreenWidth/2)-200, (ScreenHeight/2)-50, color.White,
 		)
 		timerTicker.Stop()
 	}
 
+	// Handle game started vs paused
+	if GameStarted && GamePaused {
+		drawBlackOverlay(screen)
+		text.Draw(screen, "Game Paused. Escape to resume\nor Q to quit.", baseFont, (ScreenWidth/3)-56, (ScreenHeight/3)+90, color.White)
+	} else if !GameStarted && !GameOver {
+		// Do not update snake
+		// Show start text
+		drawBlackOverlay(screen)
+		text.Draw(screen, "Arrow keys or WASD keys move snake\nEnter starts game", baseFont, (ScreenWidth/3)-70, (ScreenHeight/3)+130, color.White)
+	}
+
 	// Handle game over sound
 	if GameOver && GameJustEnded && !GameOverSndPlaying {
-		GameOverSndPlaying = true
-		gameOverSnd.Seek(0)
-		gameOverSnd.Play()
+		if !muted {
+			GameOverSndPlaying = true
+			gameOverSnd.Seek(0)
+			gameOverSnd.Play()
+		}
 	}
 	if GameOver && GameOverSndPlaying {
-		gameOverSnd.Play()
+		if !muted {
+			gameOverSnd.Play()
+		}
 	}
 
 }
